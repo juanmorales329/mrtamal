@@ -67,7 +67,15 @@ else
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Contraseña</label>
-                        <input class="form-control" @bind="formPassword" type="password" />
+                        <div class="input-group">
+                            <input class="form-control" @bind="formPassword"
+                                   type="@(mostrarPwd ? "text" : "password")"
+                                   placeholder="Mínimo 6 caracteres" />
+                            <button class="btn btn-outline-secondary" type="button"
+                                    @onclick="() => mostrarPwd = !mostrarPwd">
+                                @(mostrarPwd ? "🙈" : "👁")
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Rol</label>
@@ -167,7 +175,15 @@ else
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Nueva contraseña</label>
-                        <input class="form-control" @bind="formPassword" type="password" />
+                        <div class="input-group">
+                            <input class="form-control" @bind="formPassword"
+                                   type="@(mostrarPwd ? "text" : "password")"
+                                   placeholder="Mínimo 6 caracteres" />
+                            <button class="btn btn-outline-secondary" type="button"
+                                    @onclick="() => mostrarPwd = !mostrarPwd">
+                                @(mostrarPwd ? "🙈" : "👁")
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -263,6 +279,7 @@ else
     private List<UsuarioDto>? lista;
     private List<SucursalDto>? sucursales;
     private bool mostrarCrear, mostrarEditar, mostrarPassword, mostrarTraslado, mostrarHistorial;
+    private bool mostrarPwd;
     private UsuarioDto? editando;
     private string formNombre = "", formUsername = "", formEmail = "", formPassword = "", formRol = "Usuario", formMotivo = "";
     private int? formSucursalId;
@@ -279,7 +296,7 @@ else
     private void AbrirModalCrear()
     {
         formNombre = formUsername = formEmail = formPassword = formMotivo = "";
-        formRol = "Usuario"; formSucursalId = null; error = null;
+        formRol = "Usuario"; formSucursalId = null; error = null; mostrarPwd = false;
         mostrarCrear = true;
     }
 
@@ -290,7 +307,7 @@ else
         mostrarEditar = true;
     }
 
-    private void AbrirModalPassword(UsuarioDto u) { editando = u; formPassword = ""; mostrarPassword = true; }
+    private void AbrirModalPassword(UsuarioDto u) { editando = u; formPassword = ""; mostrarPwd = false; mostrarPassword = true; }
     private void AbrirModalTraslado(UsuarioDto u) { editando = u; formSucursalId = u.SucursalId; formMotivo = ""; mostrarTraslado = true; }
 
     private async Task VerHistorial(UsuarioDto u)

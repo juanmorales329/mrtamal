@@ -6,7 +6,8 @@
 <div class="container d-flex justify-content-center align-items-center" style="min-height:100vh;background:#f8f9fa">
     <div class="card shadow-lg" style="width:400px;border-radius:16px;overflow:hidden">
         <div style="background:linear-gradient(135deg,#FF6D00,#FF8F00);padding:30px;text-align:center">
-            <img src="/logo-mrtamal.png" alt="Mr Tamal" style="height:80px;border-radius:50%;border:3px solid white"
+            <img src="/logo-mrtamal.png" alt="Mr Tamal"
+                 style="height:80px;border-radius:50%;border:3px solid white"
                  onerror="this.style.display='none'" />
             <h4 class="text-white mt-2 mb-0 fw-bold">MrTamal Finanzas</h4>
             <small class="text-white" style="opacity:0.8">Sistema de Control</small>
@@ -36,7 +37,15 @@
             </div>
             <div class="mb-3">
                 <label class="form-label fw-bold">Contraseña</label>
-                <input class="form-control" @bind="password" type="password" placeholder="••••••••" />
+                <div class="input-group">
+                    <input class="form-control" @bind="password"
+                           type="@(mostrarPassword ? "text" : "password")"
+                           placeholder="••••••••" />
+                    <button class="btn btn-outline-secondary" type="button"
+                            @onclick="() => mostrarPassword = !mostrarPassword">
+                        @(mostrarPassword ? "🙈" : "👁")
+                    </button>
+                </div>
             </div>
             @if (needsSetup)
             {
@@ -58,13 +67,14 @@
 @code {
     private string username = "", password = "", nombre = "", email = "";
     private string? error;
-    private bool loading, needsSetup;
+    private bool loading, needsSetup, mostrarPassword;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var resp = await (new System.Net.Http.HttpClient { BaseAddress = new Uri("https://mrtamal.onrender.com") })
+            var resp = await (new System.Net.Http.HttpClient
+                { BaseAddress = new Uri("https://mrtamal.onrender.com") })
                 .GetFromJsonAsync<NeedsSetupResponse>("/api/auth/needs-setup");
             needsSetup = resp?.NeedsSetup ?? false;
         }
