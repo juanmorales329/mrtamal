@@ -11,7 +11,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient
 {
-    BaseAddress = new Uri("http://localhost:5176")
+    BaseAddress = new Uri("https://mrtamal.onrender.com")
 });
 
 builder.Services.AddBlazoredLocalStorage();

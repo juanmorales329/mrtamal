@@ -217,7 +217,7 @@ else
     private async Task VerHistorial(UsuarioDto u)
     {
         editando = u; historial = null; mostrarHistorial = true;
-        var resp = await Http.GetFromJsonAsync<List<HistorialItem>>($"http://localhost:5176/api/usuarios/{u.Id}/asignaciones");
+        var resp = await Http.GetFromJsonAsync<List<HistorialItem>>($"https://mrtamal.onrender.com/api/usuarios/{u.Id}/asignaciones");
         historial = resp ?? [];
     }
 
@@ -232,7 +232,7 @@ else
     private async Task GuardarTraslado()
     {
         if (editando is null) return;
-        await Http.PostAsJsonAsync($"http://localhost:5176/api/usuarios/{editando.Id}/trasladar",
+        await Http.PostAsJsonAsync($"https://mrtamal.onrender.com/api/usuarios/{editando.Id}/trasladar",
             new { sucursalId = formSucursalId, motivo = formMotivo });
         mostrarTraslado = false;
         lista = await Api.GetUsuariosAsync();
