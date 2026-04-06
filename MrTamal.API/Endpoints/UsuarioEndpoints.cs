@@ -14,11 +14,33 @@ public static class UsuarioEndpoints
         group.MapGet("/", async (AppDbContext db) =>
         {
             var lista = await db.Usuarios.Include(u => u.Sucursal)
-                .Where(u => u.Activo).OrderBy(u => u.Nombre).ToListAsync();
+                .OrderBy(u => u.Nombre).ToListAsync();
             return Results.Ok(lista.Select(ToDto));
         });
 
-        // Historial de asignaciones de un usuario
+        // Crear usuario (solo Admin)
+        group.MapPost("/", async (CreateUsuarioRequest req, AppDbContext db) =>
+        {
+            if (await db.Usuarios.AnyAsync(u => u.Username == req.Username.ToLower().Trim()))
+                return Results.BadRequest("El nombre de usuario ya existe.");
+
+            var u = new Usuario
+            {
+                Nombre = req.Nombre,
+                Username = req.Username.ToLower().Trim(),
+                Email = req.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
+                Rol = req.Rol,
+                SucursalId = req.SucursalId,
+                Activo = true
+            };
+            db.Usuarios.Add(u);
+            await db.SaveChangesAsync();
+            await db.Entry(u).Reference(x => x.Sucursal).LoadAsync();
+            return Results.Created($"/api/usuarios/{u.Id}", ToDto(u));
+        });
+
+        // Historial de asignaciones
         group.MapGet("/{id:int}/asignaciones", async (int id, AppDbContext db) =>
         {
             var lista = await db.AsignacionesSucursal
@@ -28,15 +50,11 @@ public static class UsuarioEndpoints
                 .ToListAsync();
             return Results.Ok(lista.Select(a => new
             {
-                a.Id,
-                a.SucursalId,
+                a.Id, a.SucursalId,
                 SucursalNombre = a.Sucursal?.Nombre,
                 Pais = a.Sucursal?.Pais,
                 Moneda = a.Sucursal?.SimboloMoneda,
-                a.FechaInicio,
-                a.FechaFin,
-                a.Motivo,
-                a.Activa
+                a.FechaInicio, a.FechaFin, a.Motivo, a.Activa
             }));
         });
 
@@ -48,23 +66,31 @@ public static class UsuarioEndpoints
             u.Nombre = req.Nombre;
             u.Rol = req.Rol;
             u.Activo = req.Activo;
-            // Si cambia de sucursal, registrar el traslado
             if (u.SucursalId != req.SucursalId)
-                await RegistrarTraslado(db, u, req.SucursalId, "Cambio manual desde administración");
+                await RegistrarTraslado(db, u, req.SucursalId, "Cambio desde administración");
             u.SucursalId = req.SucursalId;
             await db.SaveChangesAsync();
             await db.Entry(u).Reference(x => x.Sucursal).LoadAsync();
             return Results.Ok(ToDto(u));
         });
 
-        // Traslado explícito con motivo
+        // Cambiar contraseña
+        group.MapPut("/{id:int}/password", async (int id, CambiarPasswordRequest req, AppDbContext db) =>
+        {
+            var u = await db.Usuarios.FindAsync(id);
+            if (u is null) return Results.NotFound();
+            u.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.NuevoPassword);
+            await db.SaveChangesAsync();
+            return Results.Ok(new { mensaje = "Contraseña actualizada." });
+        });
+
+        // Traslado explícito
         group.MapPost("/{id:int}/trasladar", async (int id, TrasladoRequest req, AppDbContext db) =>
         {
             var u = await db.Usuarios.FindAsync(id);
             if (u is null) return Results.NotFound();
             if (u.SucursalId == req.SucursalId)
                 return Results.BadRequest("El usuario ya está en esa sucursal.");
-
             await RegistrarTraslado(db, u, req.SucursalId, req.Motivo);
             u.SucursalId = req.SucursalId;
             await db.SaveChangesAsync();
@@ -72,6 +98,7 @@ public static class UsuarioEndpoints
             return Results.Ok(new { mensaje = "Traslado registrado.", sucursal = u.Sucursal?.Nombre });
         });
 
+        // Eliminar (desactivar)
         group.MapDelete("/{id:int}", async (int id, AppDbContext db) =>
         {
             var u = await db.Usuarios.FindAsync(id);
@@ -84,31 +111,19 @@ public static class UsuarioEndpoints
 
     private static async Task RegistrarTraslado(AppDbContext db, Usuario usuario, int? nuevaSucursalId, string? motivo)
     {
-        // Cerrar asignación activa anterior
         var activa = await db.AsignacionesSucursal
             .FirstOrDefaultAsync(a => a.UsuarioId == usuario.Id && a.Activa);
-        if (activa is not null)
-        {
-            activa.FechaFin = DateTime.UtcNow;
-            activa.Activa = false;
-        }
-
-        // Crear nueva asignación si hay sucursal destino
+        if (activa is not null) { activa.FechaFin = DateTime.UtcNow; activa.Activa = false; }
         if (nuevaSucursalId.HasValue)
-        {
             db.AsignacionesSucursal.Add(new AsignacionSucursal
             {
-                UsuarioId = usuario.Id,
-                SucursalId = nuevaSucursalId.Value,
-                FechaInicio = DateTime.UtcNow,
-                Motivo = motivo,
-                Activa = true
+                UsuarioId = usuario.Id, SucursalId = nuevaSucursalId.Value,
+                FechaInicio = DateTime.UtcNow, Motivo = motivo, Activa = true
             });
-        }
     }
 
     private static UsuarioDto ToDto(Usuario u) =>
-        new(u.Id, u.Nombre, u.Email, u.Rol, u.SucursalId, u.Sucursal?.Nombre, u.Activo);
+        new(u.Id, u.Nombre, u.Username, u.Email, u.Rol, u.SucursalId, u.Sucursal?.Nombre, u.Activo);
 }
 
 public record TrasladoRequest(int? SucursalId, string? Motivo);

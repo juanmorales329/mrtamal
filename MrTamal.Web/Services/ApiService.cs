@@ -114,8 +114,20 @@ public class ApiService(HttpClient http)
     public Task<List<UsuarioDto>?> GetUsuariosAsync() =>
         http.GetFromJsonAsync<List<UsuarioDto>>("/api/usuarios");
 
+    public async Task<UsuarioDto?> CreateUsuarioAsync(CreateUsuarioRequest req) =>
+        await PostAsync<UsuarioDto>("/api/usuarios", req);
+
     public async Task<UsuarioDto?> UpdateUsuarioAsync(int id, UpdateUsuarioRequest req) =>
         await PutAsync<UsuarioDto>($"/api/usuarios/{id}", req);
+
+    public async Task<bool> DeleteUsuarioAsync(int id) =>
+        (await http.DeleteAsync($"/api/usuarios/{id}")).IsSuccessStatusCode;
+
+    public async Task<bool> CambiarPasswordAsync(int id, string nuevaPassword)
+    {
+        var resp = await http.PutAsJsonAsync($"/api/usuarios/{id}/password", new { nuevoPassword = nuevaPassword });
+        return resp.IsSuccessStatusCode;
+    }
 
     public class PaisDto
     {

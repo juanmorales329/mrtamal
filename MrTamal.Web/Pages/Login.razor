@@ -3,56 +3,95 @@
 @inject AuthService AuthSvc
 @inject NavigationManager Nav
 
-<div class="container d-flex justify-content-center align-items-center" style="min-height:100vh">
-    <div class="card shadow" style="width:380px">
+<div class="container d-flex justify-content-center align-items-center" style="min-height:100vh;background:#f8f9fa">
+    <div class="card shadow-lg" style="width:400px;border-radius:16px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#FF6D00,#FF8F00);padding:30px;text-align:center">
+            <img src="/logo-mrtamal.png" alt="Mr Tamal" style="height:80px;border-radius:50%;border:3px solid white"
+                 onerror="this.style.display='none'" />
+            <h4 class="text-white mt-2 mb-0 fw-bold">MrTamal Finanzas</h4>
+            <small class="text-white" style="opacity:0.8">Sistema de Control</small>
+        </div>
         <div class="card-body p-4">
-            <h4 class="text-center mb-4">MrTamal Finanzas</h4>
-
             @if (!string.IsNullOrEmpty(error))
             {
-                <div class="alert alert-danger">@error</div>
+                <div class="alert alert-danger py-2">@error</div>
             }
-
-            <EditForm Model="model" OnValidSubmit="HandleLogin">
-                <DataAnnotationsValidator />
+            @if (needsSetup)
+            {
+                <div class="alert alert-info py-2 small">
+                    Primera vez. Crea el usuario administrador.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Nombre completo</label>
+                    <input class="form-control" @bind="nombre" placeholder="Juan Morales" />
+                </div>
                 <div class="mb-3">
                     <label class="form-label">Email</label>
-                    <InputText class="form-control" @bind-Value="model.Email" type="email" />
+                    <input class="form-control" @bind="email" type="email" />
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Contraseña</label>
-                    <InputText class="form-control" @bind-Value="model.Password" type="password" />
-                </div>
-                <button class="btn btn-primary w-100" type="submit" disabled="@loading">
+            }
+            <div class="mb-3">
+                <label class="form-label fw-bold">Usuario</label>
+                <input class="form-control" @bind="username" placeholder="tu_usuario" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Contraseña</label>
+                <input class="form-control" @bind="password" type="password" placeholder="••••••••" />
+            </div>
+            @if (needsSetup)
+            {
+                <button class="btn btn-warning w-100 fw-bold" @onclick="HandleSetup" disabled="@loading">
+                    @(loading ? "Configurando..." : "Crear Administrador")
+                </button>
+            }
+            else
+            {
+                <button class="btn w-100 fw-bold text-white" style="background:#FF6D00"
+                        @onclick="HandleLogin" disabled="@loading">
                     @(loading ? "Ingresando..." : "Ingresar")
                 </button>
-            </EditForm>
-
-            <hr />
-            <p class="text-center mb-0">
-                ¿No tienes cuenta? <a href="/register">Regístrate</a>
-            </p>
+            }
         </div>
     </div>
 </div>
 
 @code {
-    private LoginFormModel model = new();
+    private string username = "", password = "", nombre = "", email = "";
     private string? error;
-    private bool loading;
+    private bool loading, needsSetup;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var resp = await (new System.Net.Http.HttpClient { BaseAddress = new Uri("https://mrtamal.onrender.com") })
+                .GetFromJsonAsync<NeedsSetupResponse>("/api/auth/needs-setup");
+            needsSetup = resp?.NeedsSetup ?? false;
+        }
+        catch { }
+    }
 
     private async Task HandleLogin()
     {
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        { error = "Ingresa usuario y contraseña."; return; }
         loading = true; error = null;
-        var result = await AuthSvc.LoginAsync(new(model.Email, model.Password));
+        var result = await AuthSvc.LoginAsync(new(username, password));
         loading = false;
-        if (result is null) error = "Email o contraseña incorrectos.";
+        if (result is null) error = "Usuario o contraseña incorrectos.";
         else Nav.NavigateTo("/");
     }
 
-    private class LoginFormModel
+    private async Task HandleSetup()
     {
-        public string Email { get; set; } = "";
-        public string Password { get; set; } = "";
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        { error = "Completa todos los campos."; return; }
+        loading = true; error = null;
+        var result = await AuthSvc.SetupAsync(nombre, username, email, password);
+        loading = false;
+        if (result is null) error = "Error al configurar. Intenta de nuevo.";
+        else Nav.NavigateTo("/");
     }
+
+    private class NeedsSetupResponse { public bool NeedsSetup { get; set; } }
 }

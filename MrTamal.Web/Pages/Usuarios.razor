@@ -4,42 +4,102 @@
 @inject HttpClient Http
 
 <PageTitle>Usuarios y Roles</PageTitle>
-<h3>👥 Usuarios y Roles</h3>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">👥 Usuarios y Roles</h3>
+    <button class="btn btn-primary" @onclick="AbrirModalCrear">+ Nuevo Usuario</button>
+</div>
 
 @if (lista is null) { <p>Cargando...</p> }
 else
 {
     <table class="table table-hover">
         <thead class="table-dark">
-            <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Sucursal Actual</th><th>Estado</th><th></th></tr>
+            <tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Sucursal</th><th>Estado</th><th></th></tr>
         </thead>
         <tbody>
             @foreach (var u in lista)
             {
                 <tr>
+                    <td class="fw-bold">@u.Username</td>
                     <td>@u.Nombre</td>
-                    <td class="text-muted small">@u.Email</td>
                     <td><span class="badge @RolColor(u.Rol)">@u.Rol</span></td>
-                    <td>
-                        @if (u.SucursalNombre is not null)
-                        {
-                            <span class="badge bg-info text-dark">🏪 @u.SucursalNombre</span>
-                        }
-                        else
-                        {
-                            <span class="text-muted small">Sin sucursal</span>
-                        }
-                    </td>
+                    <td>@(u.SucursalNombre ?? "—")</td>
                     <td><span class="badge @(u.Activo ? "bg-success" : "bg-danger")">@(u.Activo ? "Activo" : "Inactivo")</span></td>
-                    <td class="d-flex gap-1">
-                        <button class="btn btn-sm btn-outline-primary" @onclick="() => AbrirModalEditar(u)">✏ Editar</button>
-                        <button class="btn btn-sm btn-outline-warning" @onclick="() => AbrirModalTraslado(u)">🔄 Trasladar</button>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => VerHistorial(u)">📋 Historial</button>
+                    <td class="d-flex gap-1 flex-wrap">
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => AbrirModalEditar(u)">✏</button>
+                        <button class="btn btn-sm btn-outline-warning" @onclick="() => AbrirModalPassword(u)">🔑</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => AbrirModalTraslado(u)">🔄</button>
+                        <button class="btn btn-sm btn-outline-info" @onclick="() => VerHistorial(u)">📋</button>
+                        @if (u.Activo)
+                        {
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(u)">🗑</button>
+                        }
                     </td>
                 </tr>
             }
         </tbody>
     </table>
+}
+
+<!-- Modal Crear -->
+@if (mostrarCrear)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#FF6D00;color:white">
+                    <h5 class="modal-title">Nuevo Usuario</h5>
+                    <button class="btn-close btn-close-white" @onclick="() => mostrarCrear = false"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(error)) { <div class="alert alert-danger py-2">@error</div> }
+                    <div class="mb-3">
+                        <label class="form-label">Nombre completo</label>
+                        <input class="form-control" @bind="formNombre" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Usuario (para login)</label>
+                        <input class="form-control" @bind="formUsername" placeholder="sin espacios, minúsculas" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input class="form-control" @bind="formEmail" type="email" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contraseña</label>
+                        <input class="form-control" @bind="formPassword" type="password" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rol</label>
+                        <select class="form-select" @bind="formRol">
+                            <option value="Admin">🔴 Admin</option>
+                            <option value="Gerente">🟡 Gerente</option>
+                            <option value="Contador">🔵 Contador</option>
+                            <option value="Reportes">🟣 Solo Reportes</option>
+                            <option value="Usuario">⚪ Usuario</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Sucursal</label>
+                        <select class="form-select" @bind="formSucursalId">
+                            <option value="">Sin sucursal</option>
+                            @foreach (var s in sucursales ?? [])
+                            {
+                                <option value="@s.Id">@s.Nombre (@s.SimboloMoneda)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="alert alert-info small">
+                        Permisos: @string.Join(", ", Roles.Permisos.GetValueOrDefault(formRol, []))
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => mostrarCrear = false">Cancelar</button>
+                    <button class="btn btn-primary" @onclick="GuardarNuevo">Crear Usuario</button>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 
 <!-- Modal Editar -->
@@ -49,7 +109,7 @@ else
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title">Editar: @editando.Nombre</h5>
+                    <h5 class="modal-title">Editar: @editando.Username</h5>
                     <button class="btn-close btn-close-white" @onclick="() => mostrarEditar = false"></button>
                 </div>
                 <div class="modal-body">
@@ -60,23 +120,59 @@ else
                     <div class="mb-3">
                         <label class="form-label">Rol</label>
                         <select class="form-select" @bind="formRol">
-                            <option value="Admin">🔴 Admin - Acceso total</option>
-                            <option value="Gerente">🟡 Gerente - Sin usuarios/sucursales</option>
-                            <option value="Contador">🔵 Contador - Solo ingresos, egresos y reportes</option>
-                            <option value="Usuario">⚪ Usuario - Solo ingresos y egresos</option>
+                            <option value="Admin">🔴 Admin</option>
+                            <option value="Gerente">🟡 Gerente</option>
+                            <option value="Contador">🔵 Contador</option>
+                            <option value="Reportes">🟣 Solo Reportes</option>
+                            <option value="Usuario">⚪ Usuario</option>
                         </select>
                     </div>
-                    <div class="alert alert-info small">
-                        <strong>Permisos:</strong> @string.Join(", ", MrTamal.Shared.Models.Roles.Permisos.GetValueOrDefault(formRol, []))
+                    <div class="mb-3">
+                        <label class="form-label">Sucursal</label>
+                        <select class="form-select" @bind="formSucursalId">
+                            <option value="">Sin sucursal</option>
+                            @foreach (var s in sucursales ?? [])
+                            {
+                                <option value="@s.Id">@s.Nombre</option>
+                            }
+                        </select>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" @bind="formActivo" id="activoCheck" />
                         <label class="form-check-label" for="activoCheck">Activo</label>
                     </div>
+                    <div class="alert alert-info small mt-2">
+                        Permisos: @string.Join(", ", Roles.Permisos.GetValueOrDefault(formRol, []))
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @onclick="() => mostrarEditar = false">Cancelar</button>
                     <button class="btn btn-primary" @onclick="GuardarEdicion">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Cambiar Password -->
+@if (mostrarPassword && editando is not null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">🔑 Cambiar contraseña: @editando.Username</h5>
+                    <button class="btn-close" @onclick="() => mostrarPassword = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nueva contraseña</label>
+                        <input class="form-control" @bind="formPassword" type="password" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => mostrarPassword = false">Cancelar</button>
+                    <button class="btn btn-warning" @onclick="GuardarPassword">Cambiar</button>
                 </div>
             </div>
         </div>
@@ -90,37 +186,30 @@ else
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-warning">
-                    <h5 class="modal-title">🔄 Trasladar: @editando.Nombre</h5>
+                    <h5 class="modal-title">🔄 Trasladar: @editando.Username</h5>
                     <button class="btn-close" @onclick="() => mostrarTraslado = false"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info small">
-                        <strong>Sucursal actual:</strong> @(editando.SucursalNombre ?? "Sin sucursal")
-                    </div>
+                    <div class="alert alert-info small">Sucursal actual: @(editando.SucursalNombre ?? "Sin sucursal")</div>
                     <div class="mb-3">
                         <label class="form-label">Nueva Sucursal</label>
                         <select class="form-select" @bind="formSucursalId">
                             <option value="">Sin sucursal</option>
-                            @if (sucursales is not null)
+                            @foreach (var s in sucursales?.Where(s => s.Activa) ?? [])
                             {
-                                @foreach (var s in sucursales.Where(s => s.Activa))
-                                {
-                                    <option value="@s.Id">🏪 @s.Nombre (@s.SimboloMoneda @s.Moneda - @s.Pais)</option>
-                                }
+                                <option value="@s.Id">🏪 @s.Nombre (@s.SimboloMoneda @s.Moneda)</option>
                             }
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Motivo del traslado</label>
-                        <input class="form-control" @bind="formMotivo" placeholder="Ej: Apertura nueva sucursal, rotación de personal..." />
+                        <label class="form-label">Motivo</label>
+                        <input class="form-control" @bind="formMotivo" placeholder="Ej: Apertura nueva sucursal..." />
                     </div>
-                    <div class="alert alert-warning small">
-                        ⚠ Los ingresos y egresos ya registrados <strong>conservarán</strong> la sucursal original. Solo los nuevos registros usarán la nueva sucursal.
-                    </div>
+                    <div class="alert alert-warning small">⚠ Los registros históricos conservarán la sucursal original.</div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @onclick="() => mostrarTraslado = false">Cancelar</button>
-                    <button class="btn btn-warning" @onclick="GuardarTraslado">Confirmar Traslado</button>
+                    <button class="btn btn-warning" @onclick="GuardarTraslado">Confirmar</button>
                 </div>
             </div>
         </div>
@@ -134,43 +223,28 @@ else
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-secondary text-white">
-                    <h5 class="modal-title">📋 Historial de Sucursales: @editando.Nombre</h5>
+                    <h5 class="modal-title">📋 Historial: @editando.Username</h5>
                     <button class="btn-close btn-close-white" @onclick="() => mostrarHistorial = false"></button>
                 </div>
                 <div class="modal-body">
-                    @if (historial is null)
-                    {
-                        <p>Cargando...</p>
-                    }
-                    else if (!historial.Any())
-                    {
-                        <p class="text-muted">Sin historial de asignaciones.</p>
-                    }
+                    @if (historial is null) { <p>Cargando...</p> }
+                    else if (!historial.Any()) { <p class="text-muted">Sin historial.</p> }
                     else
                     {
                         <table class="table table-sm">
                             <thead class="table-dark">
-                                <tr><th>Sucursal</th><th>País/Moneda</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th>Estado</th></tr>
+                                <tr><th>Sucursal</th><th>País</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th>Estado</th></tr>
                             </thead>
                             <tbody>
                                 @foreach (var h in historial)
                                 {
                                     <tr>
-                                        <td>🏪 @h.SucursalNombre</td>
-                                        <td><span class="badge bg-info text-dark">@h.Moneda @h.Pais</span></td>
+                                        <td>@h.SucursalNombre</td>
+                                        <td><span class="badge bg-info text-dark">@h.Pais</span></td>
                                         <td>@h.FechaInicio.ToString("dd/MM/yyyy")</td>
                                         <td>@(h.FechaFin?.ToString("dd/MM/yyyy") ?? "Actual")</td>
                                         <td class="small text-muted">@h.Motivo</td>
-                                        <td>
-                                            @if (h.Activa)
-                                            {
-                                                <span class="badge bg-success">Activa</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-secondary">Finalizada</span>
-                                            }
-                                        </td>
+                                        <td><span class="badge @(h.Activa ? "bg-success" : "bg-secondary")">@(h.Activa ? "Activa" : "Finalizada")</span></td>
                                     </tr>
                                 }
                             </tbody>
@@ -188,17 +262,25 @@ else
 @code {
     private List<UsuarioDto>? lista;
     private List<SucursalDto>? sucursales;
-    private bool mostrarEditar, mostrarTraslado, mostrarHistorial;
+    private bool mostrarCrear, mostrarEditar, mostrarPassword, mostrarTraslado, mostrarHistorial;
     private UsuarioDto? editando;
-    private string formNombre = "", formRol = "Usuario", formMotivo = "";
+    private string formNombre = "", formUsername = "", formEmail = "", formPassword = "", formRol = "Usuario", formMotivo = "";
     private int? formSucursalId;
     private bool formActivo = true;
+    private string? error;
     private List<HistorialItem>? historial;
 
     protected override async Task OnInitializedAsync()
     {
         lista = await Api.GetUsuariosAsync();
         sucursales = await Api.GetSucursalesAsync();
+    }
+
+    private void AbrirModalCrear()
+    {
+        formNombre = formUsername = formEmail = formPassword = formMotivo = "";
+        formRol = "Usuario"; formSucursalId = null; error = null;
+        mostrarCrear = true;
     }
 
     private void AbrirModalEditar(UsuarioDto u)
@@ -208,33 +290,54 @@ else
         mostrarEditar = true;
     }
 
-    private void AbrirModalTraslado(UsuarioDto u)
-    {
-        editando = u; formSucursalId = u.SucursalId; formMotivo = "";
-        mostrarTraslado = true;
-    }
+    private void AbrirModalPassword(UsuarioDto u) { editando = u; formPassword = ""; mostrarPassword = true; }
+    private void AbrirModalTraslado(UsuarioDto u) { editando = u; formSucursalId = u.SucursalId; formMotivo = ""; mostrarTraslado = true; }
 
     private async Task VerHistorial(UsuarioDto u)
     {
         editando = u; historial = null; mostrarHistorial = true;
-        var resp = await Http.GetFromJsonAsync<List<HistorialItem>>($"https://mrtamal.onrender.com/api/usuarios/{u.Id}/asignaciones");
+        var resp = await Http.GetFromJsonAsync<List<HistorialItem>>($"/api/usuarios/{u.Id}/asignaciones");
         historial = resp ?? [];
+    }
+
+    private async Task GuardarNuevo()
+    {
+        error = null;
+        if (string.IsNullOrWhiteSpace(formUsername) || string.IsNullOrWhiteSpace(formPassword))
+        { error = "Usuario y contraseña son requeridos."; return; }
+        var result = await Api.CreateUsuarioAsync(new(formNombre, formUsername, formEmail, formPassword, formRol, formSucursalId));
+        if (result is null) { error = "Error al crear. El usuario puede ya existir."; return; }
+        mostrarCrear = false;
+        lista = await Api.GetUsuariosAsync();
     }
 
     private async Task GuardarEdicion()
     {
         if (editando is null) return;
-        await Api.UpdateUsuarioAsync(editando.Id, new(formNombre, formRol, editando.SucursalId, formActivo));
+        await Api.UpdateUsuarioAsync(editando.Id, new(formNombre, formRol, formSucursalId, formActivo));
         mostrarEditar = false;
         lista = await Api.GetUsuariosAsync();
+    }
+
+    private async Task GuardarPassword()
+    {
+        if (editando is null || string.IsNullOrWhiteSpace(formPassword)) return;
+        await Api.CambiarPasswordAsync(editando.Id, formPassword);
+        mostrarPassword = false;
     }
 
     private async Task GuardarTraslado()
     {
         if (editando is null) return;
-        await Http.PostAsJsonAsync($"https://mrtamal.onrender.com/api/usuarios/{editando.Id}/trasladar",
+        await Http.PostAsJsonAsync($"/api/usuarios/{editando.Id}/trasladar",
             new { sucursalId = formSucursalId, motivo = formMotivo });
         mostrarTraslado = false;
+        lista = await Api.GetUsuariosAsync();
+    }
+
+    private async Task Eliminar(UsuarioDto u)
+    {
+        await Api.DeleteUsuarioAsync(u.Id);
         lista = await Api.GetUsuariosAsync();
     }
 
@@ -243,12 +346,12 @@ else
         "Admin" => "bg-danger",
         "Gerente" => "bg-warning text-dark",
         "Contador" => "bg-info text-dark",
+        "Reportes" => "bg-purple text-white",
         _ => "bg-secondary"
     };
 
     private class HistorialItem
     {
-        public int Id { get; set; }
         public string? SucursalNombre { get; set; }
         public string? Pais { get; set; }
         public string? Moneda { get; set; }

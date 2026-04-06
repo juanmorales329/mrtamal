@@ -19,6 +19,7 @@ public class TokenService(IConfiguration config)
             new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
             new Claim(ClaimTypes.Email, usuario.Email),
             new Claim(ClaimTypes.Name, usuario.Nombre),
+            new Claim("username", usuario.Username),
             new Claim(ClaimTypes.Role, usuario.Rol),
             new Claim("sucursalId", usuario.SucursalId?.ToString() ?? ""),
             new Claim("rol", usuario.Rol)

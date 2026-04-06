@@ -16,6 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Usuario>().HasIndex(u => u.Email).IsUnique();
+        modelBuilder.Entity<Usuario>().HasIndex(u => u.Username).IsUnique();
         modelBuilder.Entity<Catalogo>().HasIndex(c => new { c.Codigo, c.Tipo }).IsUnique();
 
         modelBuilder.Entity<Usuario>()

@@ -20,9 +20,10 @@ public class AuthService(HttpClient http, ILocalStorageService localStorage, Aut
         return auth;
     }
 
-    public async Task<AuthResponse?> RegisterAsync(RegisterRequest req)
+    public async Task<AuthResponse?> SetupAsync(string nombre, string username, string email, string password)
     {
-        var resp = await http.PostAsJsonAsync("/api/auth/register", req);
+        var resp = await http.PostAsJsonAsync("/api/auth/setup",
+            new { nombre, username, email, password });
         if (!resp.IsSuccessStatusCode) return null;
         var auth = await resp.Content.ReadFromJsonAsync<AuthResponse>();
         if (auth is not null) await GuardarSesion(auth);
