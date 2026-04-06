@@ -1,0 +1,16 @@
+@using Microsoft.AspNetCore.Components.Routing
+
+<NavLink class="nav-item-link" href="@Href" Match="@Match" @onclick="HandleClick">
+    <span class="nav-icon">@Icon</span>
+    <span class="nav-label">@Label</span>
+</NavLink>
+
+@code {
+    [Parameter] public string Href { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = "";
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public NavLinkMatch Match { get; set; } = NavLinkMatch.Prefix;
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    private async Task HandleClick() => await OnClick.InvokeAsync();
+}

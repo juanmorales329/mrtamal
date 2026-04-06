@@ -101,5 +101,6 @@ app.MapCargaMasivaEndpoints();
 app.MapMenuPublicoEndpoints();
 app.MapSucursalEndpoints();
 app.MapUsuarioEndpoints();
+app.MapProyectadoEndpoints();
 
 app.Run();

@@ -1,5 +1,5 @@
 @page "/egresos"
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin,Gerente,Contador,Usuario")]
 @inject ApiService Api
 
 <PageTitle>Egresos</PageTitle>

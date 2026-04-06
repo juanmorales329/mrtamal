@@ -12,6 +12,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Egreso> Egresos => Set<Egreso>();
     public DbSet<MenuItem> MenuItems => Set<MenuItem>();
     public DbSet<AsignacionSucursal> AsignacionesSucursal => Set<AsignacionSucursal>();
+    public DbSet<MetaAnual> MetasAnuales => Set<MetaAnual>();
+    public DbSet<DiaNolaboral> DiasNoLaborables => Set<DiaNolaboral>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,9 +45,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Sucursal>().Property(s => s.Moneda).HasDefaultValue("USD");
         modelBuilder.Entity<Sucursal>().Property(s => s.SimboloMoneda).HasDefaultValue("$");
 
-        modelBuilder.Entity<AsignacionSucursal>()
-            .HasOne(a => a.Usuario).WithMany().HasForeignKey(a => a.UsuarioId).OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<AsignacionSucursal>()
-            .HasOne(a => a.Sucursal).WithMany().HasForeignKey(a => a.SucursalId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<MetaAnual>().Property(m => m.MetaVentas).HasPrecision(18, 2);
+        modelBuilder.Entity<MetaAnual>().HasIndex(m => new { m.Anio, m.SucursalId }).IsUnique();
+        modelBuilder.Entity<MetaAnual>()
+            .HasOne(m => m.Sucursal).WithMany().HasForeignKey(m => m.SucursalId).OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<DiaNolaboral>()
+            .HasOne(d => d.Sucursal).WithMany().HasForeignKey(d => d.SucursalId).OnDelete(DeleteBehavior.SetNull);
     }
 }

@@ -24,10 +24,10 @@ public static class Roles
 
     public static readonly Dictionary<string, List<string>> Permisos = new()
     {
-        [Admin]    = ["inicio","ingresos","egresos","catalogos","reportes","carga-masiva","menu","sucursales","usuarios"],
-        [Gerente]  = ["inicio","ingresos","egresos","catalogos","reportes","carga-masiva","menu"],
-        [Contador] = ["inicio","ingresos","egresos","reportes"],
-        [Reportes] = ["inicio","reportes"],
+        [Admin]    = ["inicio","ingresos","egresos","catalogos","reportes","proyectado","carga-masiva","menu","sucursales","usuarios"],
+        [Gerente]  = ["inicio","ingresos","egresos","catalogos","reportes","proyectado","carga-masiva","menu"],
+        [Contador] = ["inicio","ingresos","egresos","reportes","proyectado"],
+        [Reportes] = ["inicio","reportes","proyectado"],
         [Usuario]  = ["inicio","ingresos","egresos"],
     };
 

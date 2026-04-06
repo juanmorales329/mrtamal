@@ -72,6 +72,26 @@
                 options: { responsive: true }
             });
         }
+        function renderProyChart(canvasId, labels, metas, reales) {
+            if (charts[canvasId]) charts[canvasId].destroy();
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+            charts[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Meta', data: metas, backgroundColor: 'rgba(255,109,0,0.7)', borderColor: '#FF6D00', borderWidth: 1 },
+                        { label: 'Real', data: reales, backgroundColor: 'rgba(76,175,80,0.7)', borderColor: '#4CAF50', borderWidth: 1 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
     </script>
 </body>
 

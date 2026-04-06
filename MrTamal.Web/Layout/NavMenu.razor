@@ -1,60 +1,43 @@
-﻿<AuthorizeView>
+﻿@using Microsoft.AspNetCore.Components.Routing
+
+<AuthorizeView>
     <Authorized Context="authCtx">
-        <div class="nav-scrollable">
-            <nav class="flex-column">
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                        🏠 Inicio
-                    </NavLink>
-                </div>
+        <div class="nav-items">
+            <NavItem Href="" Icon="🏠" Label="Inicio" Match="NavLinkMatch.All" OnClick="OnNavClick" />
 
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="ingresos">💰 Ingresos</NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="egresos">💸 Egresos</NavLink>
-                </div>
+            <!-- Solo roles que manejan movimientos -->
+            <AuthorizeView Roles="Admin,Gerente,Contador,Usuario" Context="c1">
+                <NavItem Href="ingresos" Icon="💰" Label="Ingresos" OnClick="OnNavClick" />
+                <NavItem Href="egresos" Icon="💸" Label="Egresos" OnClick="OnNavClick" />
+            </AuthorizeView>
 
-                <AuthorizeView Roles="Admin,Gerente" Context="gerenteCtx">
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="catalogos">📋 Catálogos</NavLink>
-                    </div>
-                </AuthorizeView>
+            <!-- Catálogos -->
+            <AuthorizeView Roles="Admin,Gerente" Context="c2">
+                <NavItem Href="catalogos" Icon="📋" Label="Catálogos" OnClick="OnNavClick" />
+            </AuthorizeView>
 
-                <AuthorizeView Roles="Admin,Gerente,Contador" Context="contCtx">
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="reportes">📊 Reportes</NavLink>
-                    </div>
-                </AuthorizeView>
+            <!-- Reportes y Proyectado: Contador, Reportes y superiores -->
+            <AuthorizeView Roles="Admin,Gerente,Contador,Reportes" Context="c3">
+                <NavItem Href="reportes" Icon="📊" Label="Reportes" OnClick="OnNavClick" />
+                <NavItem Href="proyectado" Icon="🎯" Label="Proyectado" OnClick="OnNavClick" />
+            </AuthorizeView>
 
-                <AuthorizeView Roles="Reportes" Context="repCtx">
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="reportes">📊 Reportes</NavLink>
-                    </div>
-                </AuthorizeView>
+            <!-- Carga masiva y menú -->
+            <AuthorizeView Roles="Admin,Gerente" Context="c4">
+                <NavItem Href="carga-masiva" Icon="📤" Label="Carga Masiva" OnClick="OnNavClick" />
+                <NavItem Href="menu" Icon="🌮" Label="Menú Público" OnClick="OnNavClick" />
+            </AuthorizeView>
 
-                <AuthorizeView Roles="Admin,Gerente" Context="gerCtx2">
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="carga-masiva">📤 Carga Masiva</NavLink>
-                    </div>
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="menu">🌮 Menú Público</NavLink>
-                    </div>
-                </AuthorizeView>
-
-                <AuthorizeView Roles="Admin" Context="adminCtx">
-                    <div class="nav-separator px-3 mt-2 mb-1"
-                         style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:1px">
-                        Administración
-                    </div>
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="sucursales">🏪 Sucursales</NavLink>
-                    </div>
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="usuarios">👥 Usuarios y Roles</NavLink>
-                    </div>
-                </AuthorizeView>
-            </nav>
+            <!-- Administración solo Admin -->
+            <AuthorizeView Roles="Admin" Context="c5">
+                <div class="nav-section-title">ADMINISTRACIÓN</div>
+                <NavItem Href="sucursales" Icon="🏪" Label="Sucursales" OnClick="OnNavClick" />
+                <NavItem Href="usuarios" Icon="👥" Label="Usuarios y Roles" OnClick="OnNavClick" />
+            </AuthorizeView>
         </div>
     </Authorized>
 </AuthorizeView>
+
+@code {
+    [Parameter] public EventCallback OnNavClick { get; set; }
+}

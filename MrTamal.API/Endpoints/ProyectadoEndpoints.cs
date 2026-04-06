@@ -1,0 +1,177 @@
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using MrTamal.API.Data;
+using MrTamal.Shared.DTOs;
+using MrTamal.Shared.Models;
+
+namespace MrTamal.API.Endpoints;
+
+public static class ProyectadoEndpoints
+{
+    public static void MapProyectadoEndpoints(this WebApplication app)
+    {
+        var group = app.MapGroup("/api/proyectado").WithTags("Proyectado").RequireAuthorization();
+
+        // Obtener o calcular resumen proyectado
+        group.MapGet("/{anio:int}", async (int anio, AppDbContext db, ClaimsPrincipal user) =>
+        {
+            var uid = GetUserId(user);
+            var usuario = await db.Usuarios.FindAsync(uid);
+
+            var meta = await db.MetasAnuales
+                .FirstOrDefaultAsync(m => m.Anio == anio &&
+                    (usuario!.SucursalId == null || m.SucursalId == usuario.SucursalId));
+
+            if (meta is null) return Results.NotFound(new { mensaje = "No hay meta configurada para este año." });
+
+            var diasNoLab = await db.DiasNoLaborables
+                .Where(d => d.Fecha.Year == anio &&
+                    (usuario!.SucursalId == null || d.SucursalId == usuario.SucursalId))
+                .ToListAsync();
+
+            var resumen = CalcularResumen(meta, diasNoLab, db, uid, anio);
+            return Results.Ok(await resumen);
+        });
+
+        // Listar metas
+        group.MapGet("/metas", async (AppDbContext db, ClaimsPrincipal user) =>
+        {
+            var uid = GetUserId(user);
+            var usuario = await db.Usuarios.FindAsync(uid);
+            var lista = await db.MetasAnuales.Include(m => m.Sucursal)
+                .Where(m => usuario!.SucursalId == null || m.SucursalId == usuario.SucursalId)
+                .OrderByDescending(m => m.Anio).ToListAsync();
+            return Results.Ok(lista.Select(m => new MetaAnualDto(m.Id, m.Anio, m.MetaVentas, m.ExcluirDomingos, m.SucursalId, m.Sucursal?.Nombre)));
+        });
+
+        // Crear/actualizar meta
+        group.MapPost("/metas", async (CreateMetaAnualRequest req, AppDbContext db, ClaimsPrincipal user) =>
+        {
+            var uid = GetUserId(user);
+            var existente = await db.MetasAnuales.FirstOrDefaultAsync(m => m.Anio == req.Anio && m.SucursalId == req.SucursalId);
+            if (existente is not null)
+            {
+                existente.MetaVentas = req.MetaVentas;
+                existente.ExcluirDomingos = req.ExcluirDomingos;
+            }
+            else
+            {
+                db.MetasAnuales.Add(new MetaAnual
+                {
+                    Anio = req.Anio, MetaVentas = req.MetaVentas,
+                    ExcluirDomingos = req.ExcluirDomingos,
+                    SucursalId = req.SucursalId, UsuarioId = uid
+                });
+            }
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        });
+
+        // Días no laborables
+        group.MapGet("/dias-nolaborables/{anio:int}", async (int anio, AppDbContext db, ClaimsPrincipal user) =>
+        {
+            var uid = GetUserId(user);
+            var usuario = await db.Usuarios.FindAsync(uid);
+            var lista = await db.DiasNoLaborables
+                .Where(d => d.Fecha.Year == anio &&
+                    (usuario!.SucursalId == null || d.SucursalId == usuario.SucursalId))
+                .OrderBy(d => d.Fecha).ToListAsync();
+            return Results.Ok(lista.Select(d => new DiaNolaboralDto(d.Id, d.Fecha, d.Descripcion)));
+        });
+
+        group.MapPost("/dias-nolaborables", async (CreateDiaNolaboralRequest req, AppDbContext db, ClaimsPrincipal user) =>
+        {
+            var uid = GetUserId(user);
+            var fechaUtc = DateTime.SpecifyKind(req.Fecha.Date, DateTimeKind.Utc);
+            if (await db.DiasNoLaborables.AnyAsync(d => d.Fecha == fechaUtc && d.SucursalId == req.SucursalId))
+                return Results.BadRequest("Esa fecha ya está registrada.");
+            db.DiasNoLaborables.Add(new DiaNolaboral
+            {
+                Fecha = fechaUtc, Descripcion = req.Descripcion,
+                SucursalId = req.SucursalId, UsuarioId = uid
+            });
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        });
+
+        group.MapDelete("/dias-nolaborables/{id:int}", async (int id, AppDbContext db) =>
+        {
+            var d = await db.DiasNoLaborables.FindAsync(id);
+            if (d is null) return Results.NotFound();
+            db.DiasNoLaborables.Remove(d);
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        });
+    }
+
+    private static async Task<ResumenProyectado> CalcularResumen(
+        MetaAnual meta, List<DiaNolaboral> diasNoLab, AppDbContext db, int uid, int anio)
+    {
+        var fechasNoLab = diasNoLab.Select(d => d.Fecha.Date).ToHashSet();
+
+        // Calcular días laborables del año
+        int diasLaborablesAnio = 0;
+        var inicio = new DateTime(anio, 1, 1);
+        var fin = new DateTime(anio, 12, 31);
+        for (var d = inicio; d <= fin; d = d.AddDays(1))
+        {
+            if (meta.ExcluirDomingos && d.DayOfWeek == DayOfWeek.Sunday) continue;
+            if (fechasNoLab.Contains(d.Date)) continue;
+            diasLaborablesAnio++;
+        }
+
+        var metaDiaria = diasLaborablesAnio > 0 ? meta.MetaVentas / diasLaborablesAnio : 0;
+
+        // Ventas reales del año
+        var ventaReal = await db.Ingresos
+            .Where(i => i.UsuarioId == uid && i.Fecha.Year == anio)
+            .SumAsync(i => (decimal?)i.Cantidad) ?? 0;
+
+        // Desglose mensual
+        var desglose = new List<DesgloseMes>();
+        for (int mes = 1; mes <= 12; mes++)
+        {
+            var inicioMes = new DateTime(anio, mes, 1);
+            var finMes = inicioMes.AddMonths(1).AddDays(-1);
+            int diasLabMes = 0;
+            for (var d = inicioMes; d <= finMes; d = d.AddDays(1))
+            {
+                if (meta.ExcluirDomingos && d.DayOfWeek == DayOfWeek.Sunday) continue;
+                if (fechasNoLab.Contains(d.Date)) continue;
+                diasLabMes++;
+            }
+            var metaMes = metaDiaria * diasLabMes;
+            var ventaMes = await db.Ingresos
+                .Where(i => i.UsuarioId == uid && i.Fecha.Year == anio && i.Fecha.Month == mes)
+                .SumAsync(i => (decimal?)i.Cantidad) ?? 0;
+
+            desglose.Add(new DesgloseMes(
+                mes, inicioMes.ToString("MMMM"),
+                diasLabMes, metaMes, ventaMes,
+                ventaMes - metaMes, ventaMes >= metaMes
+            ));
+        }
+
+        var pct = meta.MetaVentas > 0 ? (ventaReal / meta.MetaVentas) * 100 : 0;
+
+        return new ResumenProyectado(
+            anio, meta.MetaVentas, diasLaborablesAnio, ventaReal,
+            Math.Round(pct, 1),
+            Math.Round(metaDiaria, 2),
+            Math.Round(metaDiaria * 7, 2),
+            Math.Round(metaDiaria * (diasLaborablesAnio / 12m), 2),
+            Math.Round(metaDiaria * (diasLaborablesAnio / 6m), 2),
+            Math.Round(metaDiaria * (diasLaborablesAnio / 4m), 2),
+            Math.Round(metaDiaria * (diasLaborablesAnio / 3m), 2),
+            Math.Round(metaDiaria * (diasLaborablesAnio / 2m), 2),
+            desglose,
+            diasNoLab.Select(d => new DiaNolaboralDto(d.Id, d.Fecha, d.Descripcion)).ToList()
+        );
+    }
+
+    private static int GetUserId(ClaimsPrincipal user)
+    {
+        var val = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? user.FindFirstValue("sub");
+        return int.TryParse(val, out var id) ? id : throw new UnauthorizedAccessException();
+    }
+}
