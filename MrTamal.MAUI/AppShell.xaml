@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:views="clr-namespace:MrTamal.MAUI.Views"
+       x:Class="MrTamal.MAUI.AppShell"
+       Shell.NavBarHasShadow="True">
+
+    <Shell.Resources>
+        <Style TargetType="TabBar">
+            <Setter Property="Shell.TabBarBackgroundColor" Value="{StaticResource Primary}" />
+            <Setter Property="Shell.TabBarForegroundColor" Value="White" />
+            <Setter Property="Shell.TabBarTitleColor" Value="White" />
+            <Setter Property="Shell.TabBarUnselectedColor" Value="#BBDEFB" />
+        </Style>
+    </Shell.Resources>
+
+    <TabBar>
+        <ShellContent Title="Inicio" Icon="home.png" Route="dashboard" ContentTemplate="{DataTemplate views:DashboardPage}" />
+        <ShellContent Title="Ingresos" Icon="income.png" Route="ingresos" ContentTemplate="{DataTemplate views:IngresosPage}" />
+        <ShellContent Title="Egresos" Icon="expense.png" Route="egresos" ContentTemplate="{DataTemplate views:EgresosPage}" />
+        <ShellContent Title="Catálogos" Icon="catalog.png" Route="catalogos" ContentTemplate="{DataTemplate views:CatalogosPage}" />
+        <ShellContent Title="Reportes" Icon="report.png" Route="reportes" ContentTemplate="{DataTemplate views:ReportesPage}" />
+    </TabBar>
+</Shell>

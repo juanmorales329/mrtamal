@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MrTamal.MAUI.Views.DashboardPage"
+             Title="Inicio">
+
+    <RefreshView x:Name="Refresher" Refreshing="OnRefreshing">
+        <ScrollView>
+            <VerticalStackLayout Padding="16" Spacing="12">
+
+                <Label x:Name="BienvenidaLabel" FontSize="18" FontAttributes="Bold" />
+
+                <!-- Tarjetas resumen -->
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                    <Frame Grid.Column="0" CornerRadius="10" Padding="10" BackgroundColor="#E8F5E9">
+                        <VerticalStackLayout>
+                            <Label Text="Ingresos" FontSize="11" TextColor="Gray" />
+                            <Label x:Name="IngresosLabel" FontSize="16" FontAttributes="Bold" TextColor="#4CAF50" />
+                        </VerticalStackLayout>
+                    </Frame>
+                    <Frame Grid.Column="1" CornerRadius="10" Padding="10" BackgroundColor="#FFEBEE">
+                        <VerticalStackLayout>
+                            <Label Text="Egresos" FontSize="11" TextColor="Gray" />
+                            <Label x:Name="EgresosLabel" FontSize="16" FontAttributes="Bold" TextColor="#F44336" />
+                        </VerticalStackLayout>
+                    </Frame>
+                    <Frame Grid.Column="2" CornerRadius="10" Padding="10" BackgroundColor="#E3F2FD">
+                        <VerticalStackLayout>
+                            <Label Text="Balance" FontSize="11" TextColor="Gray" />
+                            <Label x:Name="BalanceLabel" FontSize="16" FontAttributes="Bold" />
+                        </VerticalStackLayout>
+                    </Frame>
+                </Grid>
+
+                <Label Text="Últimos Ingresos" FontAttributes="Bold" TextColor="#4CAF50" Margin="0,8,0,0" />
+                <CollectionView x:Name="IngresosRecientes" HeightRequest="150">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="4,6" ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="{Binding DescripcionCatalogo}" />
+                                <Label Grid.Column="1" Text="{Binding Cantidad, StringFormat='Q{0:N2}'}" TextColor="#4CAF50" FontAttributes="Bold" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Label Text="Últimos Egresos" FontAttributes="Bold" TextColor="#F44336" />
+                <CollectionView x:Name="EgresosRecientes" HeightRequest="150">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="4,6" ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="{Binding DescripcionCatalogo}" />
+                                <Label Grid.Column="1" Text="{Binding Cantidad, StringFormat='Q{0:N2}'}" TextColor="#F44336" FontAttributes="Bold" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

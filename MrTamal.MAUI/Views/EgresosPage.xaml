@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MrTamal.MAUI.Views.EgresosPage"
+             Title="Egresos">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="+" Clicked="OnNuevoClicked" />
+    </ContentPage.ToolbarItems>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <ActivityIndicator Grid.Row="0" x:Name="Loader" IsVisible="False" IsRunning="False"
+                           Color="{StaticResource Danger}" />
+
+        <CollectionView Grid.Row="1" x:Name="Lista" SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <SwipeView>
+                        <SwipeView.RightItems>
+                            <SwipeItems>
+                                <SwipeItem Text="Editar" BackgroundColor="{StaticResource Primary}"
+                                           Invoked="OnEditarSwipe" />
+                                <SwipeItem Text="Eliminar" BackgroundColor="{StaticResource Danger}"
+                                           Invoked="OnEliminarSwipe" />
+                            </SwipeItems>
+                        </SwipeView.RightItems>
+                        <Grid Padding="16,10" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0">
+                                <Label Text="{Binding DescripcionCatalogo}" FontAttributes="Bold" />
+                                <Label Text="{Binding Fecha, StringFormat='{0:dd/MM/yyyy}'}" FontSize="12" TextColor="Gray" />
+                                <Label Text="{Binding Notas}" FontSize="11" TextColor="Gray" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1" Text="{Binding Cantidad, StringFormat='Q{0:N2}'}"
+                                   TextColor="#F44336" FontAttributes="Bold" FontSize="16" VerticalOptions="Center" />
+                        </Grid>
+                    </SwipeView>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Frame Grid.Row="2" BackgroundColor="#FFEBEE" Padding="16,10" HasShadow="True">
+            <Label x:Name="TotalLabel" FontAttributes="Bold" FontSize="16" TextColor="#F44336" HorizontalOptions="End" />
+        </Frame>
+    </Grid>
+</ContentPage>

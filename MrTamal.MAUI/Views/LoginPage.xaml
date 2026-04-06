@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MrTamal.MAUI.Views.LoginPage"
+             BackgroundColor="{StaticResource Light}"
+             Shell.NavBarIsVisible="False">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="32" Spacing="16" VerticalOptions="Center">
+
+            <Label Text="MrTamal" FontSize="32" FontAttributes="Bold"
+                   TextColor="{StaticResource Primary}" HorizontalOptions="Center" />
+            <Label Text="Control de Finanzas" FontSize="16" TextColor="Gray"
+                   HorizontalOptions="Center" Margin="0,0,0,24" />
+
+            <Frame CornerRadius="12" Padding="20" HasShadow="True" BackgroundColor="White">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Email" FontAttributes="Bold" />
+                    <Entry x:Name="EmailEntry" Placeholder="tu@email.com" Keyboard="Email" />
+
+                    <Label Text="Contraseña" FontAttributes="Bold" />
+                    <Entry x:Name="PasswordEntry" Placeholder="••••••••" IsPassword="True" />
+
+                    <Button Text="Ingresar" BackgroundColor="{StaticResource Primary}"
+                            TextColor="White" CornerRadius="8" Margin="0,8,0,0"
+                            Clicked="OnLoginClicked" />
+
+                    <Button Text="Crear cuenta" BackgroundColor="Transparent"
+                            TextColor="{StaticResource Primary}" BorderColor="{StaticResource Primary}"
+                            BorderWidth="1" CornerRadius="8"
+                            Clicked="OnRegisterClicked" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <ActivityIndicator x:Name="Loader" IsVisible="False" IsRunning="False"
+                               Color="{StaticResource Primary}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

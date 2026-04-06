@@ -1,0 +1,61 @@
+@using MrTamal.Shared.DTOs
+
+<div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@Titulo</h5>
+                <button class="btn-close" @onclick="OnCancelar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Fecha</label>
+                    <input type="date" class="form-control" value="@Fecha.ToString("yyyy-MM-dd")"
+                           @onchange="e => FechaChanged.InvokeAsync(DateTime.Parse(e.Value!.ToString()!))" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tipo</label>
+                    <select class="form-select" value="@CatalogoId"
+                            @onchange="e => CatalogoIdChanged.InvokeAsync(int.Parse(e.Value!.ToString()!))">
+                        @if (Catalogos is not null)
+                        {
+                            @foreach (var c in Catalogos.Where(c => c.Activo))
+                            {
+                                <option value="@c.Id">[@c.Codigo] @c.Descripcion</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Cantidad (Q)</label>
+                    <input type="number" class="form-control" step="0.01" value="@Cantidad"
+                           @onchange="e => CantidadChanged.InvokeAsync(decimal.Parse(e.Value!.ToString()!))" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Notas (opcional)</label>
+                    <input class="form-control" value="@Notas"
+                           @onchange="e => NotasChanged.InvokeAsync(e.Value?.ToString())" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="OnCancelar">Cancelar</button>
+                <button class="btn btn-primary" @onclick="OnGuardar">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Titulo { get; set; } = "";
+    [Parameter] public List<CatalogoDto>? Catalogos { get; set; }
+    [Parameter] public DateTime Fecha { get; set; }
+    [Parameter] public int CatalogoId { get; set; }
+    [Parameter] public decimal Cantidad { get; set; }
+    [Parameter] public string? Notas { get; set; }
+    [Parameter] public EventCallback OnGuardar { get; set; }
+    [Parameter] public EventCallback OnCancelar { get; set; }
+    [Parameter] public EventCallback<DateTime> FechaChanged { get; set; }
+    [Parameter] public EventCallback<int> CatalogoIdChanged { get; set; }
+    [Parameter] public EventCallback<decimal> CantidadChanged { get; set; }
+    [Parameter] public EventCallback<string?> NotasChanged { get; set; }
+}

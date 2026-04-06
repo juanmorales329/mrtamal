@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MrTamal.MAUI.Views.ReportesPage"
+             Title="Reportes">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <!-- Selector tipo -->
+            <Label Text="Tipo de Reporte" FontAttributes="Bold" />
+            <Picker x:Name="TipoPicker" SelectedIndexChanged="OnTipoChanged">
+                <Picker.Items>
+                    <x:String>Diario</x:String>
+                    <x:String>Semanal</x:String>
+                    <x:String>Mensual</x:String>
+                    <x:String>Comparación Anual</x:String>
+                    <x:String>Comparación por Mes</x:String>
+                </Picker.Items>
+            </Picker>
+
+            <StackLayout x:Name="AnioPanel" IsVisible="False" Orientation="Horizontal" Spacing="8">
+                <Label Text="Año:" VerticalOptions="Center" />
+                <Entry x:Name="AnioEntry" Text="2026" Keyboard="Numeric" WidthRequest="80" />
+                <Label x:Name="AnioCompLabel" Text="vs Año:" VerticalOptions="Center" IsVisible="False" />
+                <Entry x:Name="AnioCompEntry" Text="2025" Keyboard="Numeric" WidthRequest="80" IsVisible="False" />
+            </StackLayout>
+
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Button Grid.Column="0" Text="Generar Reporte" BackgroundColor="{StaticResource Primary}"
+                        TextColor="White" CornerRadius="8" Clicked="OnGenerarClicked" />
+                <Button Grid.Column="1" x:Name="PdfBtn" Text="PDF" BackgroundColor="{StaticResource Danger}"
+                        TextColor="White" CornerRadius="8" IsVisible="False" Clicked="OnPdfClicked" />
+            </Grid>
+
+            <ActivityIndicator x:Name="Loader" IsVisible="False" IsRunning="False" Color="{StaticResource Primary}" />
+
+            <!-- Resumen -->
+            <Grid x:Name="ResumenPanel" IsVisible="False" ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                <Frame Grid.Column="0" BackgroundColor="#E8F5E9" Padding="10" CornerRadius="8">
+                    <VerticalStackLayout>
+                        <Label Text="Ingresos" FontSize="11" TextColor="Gray" />
+                        <Label x:Name="IngresosResLabel" TextColor="#4CAF50" FontAttributes="Bold" />
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Grid.Column="1" BackgroundColor="#FFEBEE" Padding="10" CornerRadius="8">
+                    <VerticalStackLayout>
+                        <Label Text="Egresos" FontSize="11" TextColor="Gray" />
+                        <Label x:Name="EgresosResLabel" TextColor="#F44336" FontAttributes="Bold" />
+                    </VerticalStackLayout>
+                </Frame>
+                <Frame Grid.Column="2" BackgroundColor="#E3F2FD" Padding="10" CornerRadius="8">
+                    <VerticalStackLayout>
+                        <Label Text="Balance" FontSize="11" TextColor="Gray" />
+                        <Label x:Name="BalanceResLabel" FontAttributes="Bold" />
+                    </VerticalStackLayout>
+                </Frame>
+            </Grid>
+
+            <!-- Comparaciones -->
+            <StackLayout x:Name="CompPanel" IsVisible="False">
+                <Label Text="Comparación" FontAttributes="Bold" Margin="0,8,0,4" />
+                <CollectionView x:Name="CompLista">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="4,6" ColumnDefinitions="*,*,*,*">
+                                <Label Grid.Column="0" Text="{Binding Periodo}" FontAttributes="Bold" />
+                                <Label Grid.Column="1" Text="{Binding TotalIngresos, StringFormat='Q{0:N0}'}" TextColor="#4CAF50" />
+                                <Label Grid.Column="2" Text="{Binding TotalEgresos, StringFormat='Q{0:N0}'}" TextColor="#F44336" />
+                                <Label Grid.Column="3" Text="{Binding Balance, StringFormat='Q{0:N0}'}" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </StackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,260 @@
+@page "/usuarios"
+@attribute [Authorize(Roles = "Admin")]
+@inject ApiService Api
+@inject HttpClient Http
+
+<PageTitle>Usuarios y Roles</PageTitle>
+<h3>👥 Usuarios y Roles</h3>
+
+@if (lista is null) { <p>Cargando...</p> }
+else
+{
+    <table class="table table-hover">
+        <thead class="table-dark">
+            <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Sucursal Actual</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var u in lista)
+            {
+                <tr>
+                    <td>@u.Nombre</td>
+                    <td class="text-muted small">@u.Email</td>
+                    <td><span class="badge @RolColor(u.Rol)">@u.Rol</span></td>
+                    <td>
+                        @if (u.SucursalNombre is not null)
+                        {
+                            <span class="badge bg-info text-dark">🏪 @u.SucursalNombre</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted small">Sin sucursal</span>
+                        }
+                    </td>
+                    <td><span class="badge @(u.Activo ? "bg-success" : "bg-danger")">@(u.Activo ? "Activo" : "Inactivo")</span></td>
+                    <td class="d-flex gap-1">
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => AbrirModalEditar(u)">✏ Editar</button>
+                        <button class="btn btn-sm btn-outline-warning" @onclick="() => AbrirModalTraslado(u)">🔄 Trasladar</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => VerHistorial(u)">📋 Historial</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<!-- Modal Editar -->
+@if (mostrarEditar && editando is not null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Editar: @editando.Nombre</h5>
+                    <button class="btn-close btn-close-white" @onclick="() => mostrarEditar = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input class="form-control" @bind="formNombre" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rol</label>
+                        <select class="form-select" @bind="formRol">
+                            <option value="Admin">🔴 Admin - Acceso total</option>
+                            <option value="Gerente">🟡 Gerente - Sin usuarios/sucursales</option>
+                            <option value="Contador">🔵 Contador - Solo ingresos, egresos y reportes</option>
+                            <option value="Usuario">⚪ Usuario - Solo ingresos y egresos</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-info small">
+                        <strong>Permisos:</strong> @string.Join(", ", MrTamal.Shared.Models.Roles.Permisos.GetValueOrDefault(formRol, []))
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" @bind="formActivo" id="activoCheck" />
+                        <label class="form-check-label" for="activoCheck">Activo</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => mostrarEditar = false">Cancelar</button>
+                    <button class="btn btn-primary" @onclick="GuardarEdicion">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Traslado -->
+@if (mostrarTraslado && editando is not null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">🔄 Trasladar: @editando.Nombre</h5>
+                    <button class="btn-close" @onclick="() => mostrarTraslado = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info small">
+                        <strong>Sucursal actual:</strong> @(editando.SucursalNombre ?? "Sin sucursal")
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nueva Sucursal</label>
+                        <select class="form-select" @bind="formSucursalId">
+                            <option value="">Sin sucursal</option>
+                            @if (sucursales is not null)
+                            {
+                                @foreach (var s in sucursales.Where(s => s.Activa))
+                                {
+                                    <option value="@s.Id">🏪 @s.Nombre (@s.SimboloMoneda @s.Moneda - @s.Pais)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motivo del traslado</label>
+                        <input class="form-control" @bind="formMotivo" placeholder="Ej: Apertura nueva sucursal, rotación de personal..." />
+                    </div>
+                    <div class="alert alert-warning small">
+                        ⚠ Los ingresos y egresos ya registrados <strong>conservarán</strong> la sucursal original. Solo los nuevos registros usarán la nueva sucursal.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => mostrarTraslado = false">Cancelar</button>
+                    <button class="btn btn-warning" @onclick="GuardarTraslado">Confirmar Traslado</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Historial -->
+@if (mostrarHistorial && editando is not null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-secondary text-white">
+                    <h5 class="modal-title">📋 Historial de Sucursales: @editando.Nombre</h5>
+                    <button class="btn-close btn-close-white" @onclick="() => mostrarHistorial = false"></button>
+                </div>
+                <div class="modal-body">
+                    @if (historial is null)
+                    {
+                        <p>Cargando...</p>
+                    }
+                    else if (!historial.Any())
+                    {
+                        <p class="text-muted">Sin historial de asignaciones.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm">
+                            <thead class="table-dark">
+                                <tr><th>Sucursal</th><th>País/Moneda</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th>Estado</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var h in historial)
+                                {
+                                    <tr>
+                                        <td>🏪 @h.SucursalNombre</td>
+                                        <td><span class="badge bg-info text-dark">@h.Moneda @h.Pais</span></td>
+                                        <td>@h.FechaInicio.ToString("dd/MM/yyyy")</td>
+                                        <td>@(h.FechaFin?.ToString("dd/MM/yyyy") ?? "Actual")</td>
+                                        <td class="small text-muted">@h.Motivo</td>
+                                        <td>
+                                            @if (h.Activa)
+                                            {
+                                                <span class="badge bg-success">Activa</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Finalizada</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => mostrarHistorial = false">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<UsuarioDto>? lista;
+    private List<SucursalDto>? sucursales;
+    private bool mostrarEditar, mostrarTraslado, mostrarHistorial;
+    private UsuarioDto? editando;
+    private string formNombre = "", formRol = "Usuario", formMotivo = "";
+    private int? formSucursalId;
+    private bool formActivo = true;
+    private List<HistorialItem>? historial;
+
+    protected override async Task OnInitializedAsync()
+    {
+        lista = await Api.GetUsuariosAsync();
+        sucursales = await Api.GetSucursalesAsync();
+    }
+
+    private void AbrirModalEditar(UsuarioDto u)
+    {
+        editando = u; formNombre = u.Nombre; formRol = u.Rol;
+        formSucursalId = u.SucursalId; formActivo = u.Activo;
+        mostrarEditar = true;
+    }
+
+    private void AbrirModalTraslado(UsuarioDto u)
+    {
+        editando = u; formSucursalId = u.SucursalId; formMotivo = "";
+        mostrarTraslado = true;
+    }
+
+    private async Task VerHistorial(UsuarioDto u)
+    {
+        editando = u; historial = null; mostrarHistorial = true;
+        var resp = await Http.GetFromJsonAsync<List<HistorialItem>>($"http://localhost:5176/api/usuarios/{u.Id}/asignaciones");
+        historial = resp ?? [];
+    }
+
+    private async Task GuardarEdicion()
+    {
+        if (editando is null) return;
+        await Api.UpdateUsuarioAsync(editando.Id, new(formNombre, formRol, editando.SucursalId, formActivo));
+        mostrarEditar = false;
+        lista = await Api.GetUsuariosAsync();
+    }
+
+    private async Task GuardarTraslado()
+    {
+        if (editando is null) return;
+        await Http.PostAsJsonAsync($"http://localhost:5176/api/usuarios/{editando.Id}/trasladar",
+            new { sucursalId = formSucursalId, motivo = formMotivo });
+        mostrarTraslado = false;
+        lista = await Api.GetUsuariosAsync();
+    }
+
+    private static string RolColor(string rol) => rol switch
+    {
+        "Admin" => "bg-danger",
+        "Gerente" => "bg-warning text-dark",
+        "Contador" => "bg-info text-dark",
+        _ => "bg-secondary"
+    };
+
+    private class HistorialItem
+    {
+        public int Id { get; set; }
+        public string? SucursalNombre { get; set; }
+        public string? Pais { get; set; }
+        public string? Moneda { get; set; }
+        public DateTime FechaInicio { get; set; }
+        public DateTime? FechaFin { get; set; }
+        public string? Motivo { get; set; }
+        public bool Activa { get; set; }
+    }
+}

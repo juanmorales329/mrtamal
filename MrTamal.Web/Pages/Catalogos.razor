@@ -1,0 +1,147 @@
+@page "/catalogos"
+@attribute [Authorize]
+@inject ApiService Api
+
+<PageTitle>Catálogos</PageTitle>
+<h3>Catálogos de Tipos</h3>
+
+<div class="row mb-3">
+    <div class="col-auto">
+        <select class="form-select" @bind="filtroTipo" @bind:after="Cargar">
+            <option value="">Todos</option>
+            <option value="1">Ingresos</option>
+            <option value="2">Egresos</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary" @onclick="() => AbrirModal(null)">+ Nuevo</button>
+    </div>
+</div>
+
+@if (lista is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <table class="table table-hover">
+        <thead class="table-dark">
+            <tr><th>Código</th><th>Descripción</th><th>Tipo</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var c in lista)
+            {
+                <tr>
+                    <td><span class="badge bg-secondary">@c.Codigo</span></td>
+                    <td>@c.Descripcion</td>
+                    <td>@(c.Tipo == MrTamal.Shared.Models.TipoCatalogo.Ingreso ? "Ingreso" : "Egreso")</td>
+                    <td><span class="badge @(c.Activo ? "bg-success" : "bg-danger")">@(c.Activo ? "Activo" : "Inactivo")</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AbrirModal(c)">Editar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (mostrarModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(editando?.Id > 0 ? "Editar" : "Nuevo") Catálogo</h5>
+                    <button class="btn-close" @onclick="() => mostrarModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(error)) { <div class="alert alert-danger">@error</div> }
+                    <div class="mb-3">
+                        <label class="form-label">Código</label>
+                        <input class="form-control" @bind="formCodigo" placeholder="Ej: SAL, ALQ" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <input class="form-control" @bind="formDescripcion" />
+                    </div>
+                    @if (editando?.Id == 0)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" @bind="formTipo">
+                                <option value="1">Ingreso</option>
+                                <option value="2">Egreso</option>
+                            </select>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" @bind="formActivo">
+                                <option value="true">Activo</option>
+                                <option value="false">Inactivo</option>
+                            </select>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => mostrarModal = false">Cancelar</button>
+                    <button class="btn btn-primary" @onclick="Guardar">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<MrTamal.Shared.DTOs.CatalogoDto>? lista;
+    private string filtroTipo = "";
+    private bool mostrarModal;
+    private MrTamal.Shared.DTOs.CatalogoDto? editando;
+    private string formCodigo = "", formDescripcion = "";
+    private int formTipo = 1;
+    private bool formActivo = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync() => await Cargar();
+
+    private async Task Cargar()
+    {
+        MrTamal.Shared.Models.TipoCatalogo? tipo = filtroTipo switch
+        {
+            "1" => MrTamal.Shared.Models.TipoCatalogo.Ingreso,
+            "2" => MrTamal.Shared.Models.TipoCatalogo.Egreso,
+            _ => null
+        };
+        lista = await Api.GetCatalogosAsync(tipo);
+    }
+
+    private void AbrirModal(MrTamal.Shared.DTOs.CatalogoDto? cat)
+    {
+        editando = cat ?? new(0, "", "", MrTamal.Shared.Models.TipoCatalogo.Ingreso, true);
+        formCodigo = editando.Codigo;
+        formDescripcion = editando.Descripcion;
+        formTipo = (int)editando.Tipo;
+        formActivo = editando.Activo;
+        error = null;
+        mostrarModal = true;
+    }
+
+    private async Task Guardar()
+    {
+        error = null;
+        if (string.IsNullOrWhiteSpace(formCodigo) || string.IsNullOrWhiteSpace(formDescripcion))
+        {
+            error = "Código y descripción son requeridos."; return;
+        }
+
+        if (editando?.Id == 0)
+            await Api.CreateCatalogoAsync(new(formCodigo, formDescripcion, (MrTamal.Shared.Models.TipoCatalogo)formTipo));
+        else
+            await Api.UpdateCatalogoAsync(editando!.Id, new(formCodigo, formDescripcion, formActivo));
+
+        mostrarModal = false;
+        await Cargar();
+    }
+}

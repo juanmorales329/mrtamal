@@ -1,0 +1,180 @@
+@page "/menu"
+@attribute [Authorize]
+@inject ApiService Api
+@inject HttpClient Http
+
+<PageTitle>Menú Público</PageTitle>
+<h3>🌮 Administrar Menú</h3>
+
+<div class="mb-3 d-flex gap-2">
+    <button class="btn btn-warning" @onclick="() => AbrirModal(null)">+ Nuevo Plato</button>
+    <a href="/publico" target="_blank" class="btn btn-outline-secondary">👁 Ver página pública</a>
+</div>
+
+@if (lista is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var item in lista)
+        {
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm" style="border-radius:16px;overflow:hidden">
+                    @if (!string.IsNullOrEmpty(item.ImagenUrl))
+                    {
+                        <img src="@($"{apiBase}{item.ImagenUrl}")" class="card-img-top" style="height:180px;object-fit:cover" alt="@item.Nombre"
+                             onerror="this.style.display='none'" />
+                    }
+                    else
+                    {
+                        <div style="height:180px;background:linear-gradient(135deg,#FF6D00,#FF8F00);display:flex;align-items:center;justify-content:center;font-size:60px">🌮</div>
+                    }
+                    <div class="card-body">
+                        <h6 class="card-title">@item.Nombre</h6>
+                        <p class="text-muted small">@item.Descripcion</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-warning text-dark">@item.Categoria</span>
+                            <span class="fw-bold text-success">$@item.Precio.ToString("N2")</span>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary flex-fill" @onclick="() => AbrirModal(item)">Editar</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(item.Id)">🗑</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (mostrarModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#FF6B00;color:white">
+                    <h5 class="modal-title">@(editandoId > 0 ? "Editar" : "Nuevo") Plato</h5>
+                    <button class="btn-close btn-close-white" @onclick="() => mostrarModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(error)) { <div class="alert alert-danger">@error</div> }
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input class="form-control" @bind="formNombre" placeholder="Ej: Tamales de Rajas" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" @bind="formDescripcion" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Precio ($)</label>
+                            <input type="number" class="form-control" step="0.01" @bind="formPrecio" />
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Categoría</label>
+                            <input class="form-control" @bind="formCategoria" placeholder="Ej: Tamales, Bebidas" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Imagen</label>
+                        <InputFile class="form-control" OnChange="OnImagenSeleccionada" accept="image/*" />
+                        @if (!string.IsNullOrEmpty(imagenPreview))
+                        {
+                            <img src="@imagenPreview" class="mt-2 rounded" style="max-height:150px" />
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => mostrarModal = false">Cancelar</button>
+                    <button class="btn btn-warning" @onclick="Guardar" disabled="@guardando">
+                        @(guardando ? "Guardando..." : "Guardar")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private const string apiBase = "http://localhost:5176";
+    private List<MrTamal.Shared.Models.MenuItem>? lista;
+    private bool mostrarModal, guardando;
+    private int editandoId;
+    private string formNombre = "", formDescripcion = "", formCategoria = "";
+    private decimal formPrecio;
+    private IBrowserFile? imagenArchivo;
+    private string? imagenPreview;
+    private string? error;
+
+    protected override async Task OnInitializedAsync() => await Cargar();
+
+    private async Task Cargar()
+    {
+        lista = await Http.GetFromJsonAsync<List<MrTamal.Shared.Models.MenuItem>>($"{apiBase}/api/menu");
+    }
+
+    private void AbrirModal(MrTamal.Shared.Models.MenuItem? item)
+    {
+        editandoId = item?.Id ?? 0;
+        formNombre = item?.Nombre ?? "";
+        formDescripcion = item?.Descripcion ?? "";
+        formPrecio = item?.Precio ?? 0;
+        formCategoria = item?.Categoria ?? "";
+        imagenArchivo = null;
+        imagenPreview = item?.ImagenUrl is not null ? $"http://localhost:5176{item.ImagenUrl}" : null;
+        error = null;
+        mostrarModal = true;
+    }
+
+    private async void OnImagenSeleccionada(InputFileChangeEventArgs e)
+    {
+        imagenArchivo = e.File;
+        using var stream = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        imagenPreview = $"data:{e.File.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
+        StateHasChanged();
+    }
+
+    private async Task Guardar()
+    {
+        if (string.IsNullOrWhiteSpace(formNombre)) { error = "El nombre es requerido."; return; }
+        guardando = true; error = null;
+
+        using var content = new MultipartFormDataContent();
+        content.Add(new StringContent(formNombre), "nombre");
+        content.Add(new StringContent(formDescripcion), "descripcion");
+        content.Add(new StringContent(formPrecio.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)), "precio");
+        content.Add(new StringContent(formCategoria), "categoria");
+        content.Add(new StringContent("true"), "activo");
+
+        if (imagenArchivo is not null)
+        {
+            using var stream = imagenArchivo.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var imgContent = new ByteArrayContent(ms.ToArray());
+            imgContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(imagenArchivo.ContentType);
+            content.Add(imgContent, "archivo", imagenArchivo.Name);
+        }
+
+        HttpResponseMessage resp;
+        if (editandoId > 0)
+            resp = await Http.PutAsync($"{apiBase}/api/menu/{editandoId}", content);
+        else
+            resp = await Http.PostAsync($"{apiBase}/api/menu", content);
+
+        guardando = false;
+        if (resp.IsSuccessStatusCode) { mostrarModal = false; await Cargar(); }
+        else error = "Error al guardar. Intenta de nuevo.";
+    }
+
+    private async Task Eliminar(int id)
+    {
+        await Http.DeleteAsync($"{apiBase}/api/menu/{id}");
+        await Cargar();
+    }
+}

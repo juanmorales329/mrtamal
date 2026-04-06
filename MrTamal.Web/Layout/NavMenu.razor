@@ -1,0 +1,54 @@
+﻿<AuthorizeView>
+    <Authorized Context="authCtx">
+        <div class="nav-scrollable">
+            <nav class="flex-column">
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        🏠 Inicio
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="ingresos">💰 Ingresos</NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="egresos">💸 Egresos</NavLink>
+                </div>
+
+                <AuthorizeView Roles="Admin,Gerente" Context="gerenteCtx">
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="catalogos">📋 Catálogos</NavLink>
+                    </div>
+                </AuthorizeView>
+
+                <AuthorizeView Roles="Admin,Gerente,Contador" Context="contCtx">
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="reportes">📊 Reportes</NavLink>
+                    </div>
+                </AuthorizeView>
+
+                <AuthorizeView Roles="Admin,Gerente" Context="gerCtx2">
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="carga-masiva">📤 Carga Masiva</NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="menu">🌮 Menú Público</NavLink>
+                    </div>
+                </AuthorizeView>
+
+                <AuthorizeView Roles="Admin" Context="adminCtx">
+                    <div class="nav-separator px-3 mt-2 mb-1"
+                         style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:1px">
+                        Administración
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="sucursales">🏪 Sucursales</NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="usuarios">👥 Usuarios y Roles</NavLink>
+                    </div>
+                </AuthorizeView>
+            </nav>
+        </div>
+    </Authorized>
+</AuthorizeView>

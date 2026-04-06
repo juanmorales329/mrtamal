@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MrTamal.MAUI.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <Color x:Key="Primary">#2196F3</Color>
+            <Color x:Key="Success">#4CAF50</Color>
+            <Color x:Key="Danger">#F44336</Color>
+            <Color x:Key="Warning">#FF9800</Color>
+            <Color x:Key="Dark">#212121</Color>
+            <Color x:Key="Light">#F5F5F5</Color>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

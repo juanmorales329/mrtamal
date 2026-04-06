@@ -1,0 +1,34 @@
+﻿@inherits LayoutComponentBase
+@inject AuthService AuthSvc
+@inject NavigationManager Nav
+
+<div class="page">
+    <div class="sidebar">
+        <div class="text-center py-3" style="background:#FF6B00">
+            <img src="/logo-mrtamal.png" alt="Mr Tamal" style="height:70px;border-radius:50%" onerror="this.style.display='none'" />
+            <div class="text-white fw-bold mt-1" style="font-size:13px">MR TAMAL</div>
+        </div>
+        <NavMenu />
+    </div>
+    <main>
+        <div class="top-row px-4">
+            <AuthorizeView>
+                <Authorized>
+                    <span class="me-3">Hola, @context.User.Identity?.Name</span>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="Logout">Salir</button>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    private async Task Logout()
+    {
+        await AuthSvc.LogoutAsync();
+        Nav.NavigateTo("/login");
+    }
+}

@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MrTamal.API", "MrTamal.API\MrTamal.API.csproj", "{3336C9DC-A558-4CEA-8711-52F010CFF801}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MrTamal.Web", "MrTamal.Web\MrTamal.Web.csproj", "{8DAFF387-F84B-44B1-85F8-EC2A27C882A9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MrTamal.Shared", "MrTamal.Shared\MrTamal.Shared.csproj", "{00734041-22AD-4E28-8656-375175D07F4A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MrTamal.MAUI", "MrTamal.MAUI\MrTamal.MAUI.csproj", "{EAD2F05F-530F-49AE-B6E5-A9E109F7C49E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3336C9DC-A558-4CEA-8711-52F010CFF801}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3336C9DC-A558-4CEA-8711-52F010CFF801}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3336C9DC-A558-4CEA-8711-52F010CFF801}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3336C9DC-A558-4CEA-8711-52F010CFF801}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DAFF387-F84B-44B1-85F8-EC2A27C882A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DAFF387-F84B-44B1-85F8-EC2A27C882A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DAFF387-F84B-44B1-85F8-EC2A27C882A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DAFF387-F84B-44B1-85F8-EC2A27C882A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00734041-22AD-4E28-8656-375175D07F4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00734041-22AD-4E28-8656-375175D07F4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00734041-22AD-4E28-8656-375175D07F4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00734041-22AD-4E28-8656-375175D07F4A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EAD2F05F-530F-49AE-B6E5-A9E109F7C49E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAD2F05F-530F-49AE-B6E5-A9E109F7C49E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAD2F05F-530F-49AE-B6E5-A9E109F7C49E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAD2F05F-530F-49AE-B6E5-A9E109F7C49E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

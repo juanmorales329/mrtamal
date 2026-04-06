@@ -1,0 +1,131 @@
+@page "/sucursales"
+@attribute [Authorize(Roles = "Admin")]
+@inject ApiService Api
+
+<PageTitle>Sucursales</PageTitle>
+<h3>Sucursales</h3>
+
+<button class="btn btn-primary mb-3" @onclick="() => AbrirModal(null)">+ Nueva Sucursal</button>
+
+@if (lista is null) { <p>Cargando...</p> }
+else
+{
+    <table class="table table-hover">
+        <thead class="table-dark">
+            <tr><th>Nombre</th><th>País</th><th>Moneda</th><th>Dirección</th><th>Teléfono</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var s in lista)
+            {
+                <tr>
+                    <td><strong>@s.Nombre</strong></td>
+                    <td>@s.Pais</td>
+                    <td><span class="badge bg-info text-dark">@s.SimboloMoneda @s.Moneda</span></td>
+                    <td>@s.Direccion</td>
+                    <td>@s.Telefono</td>
+                    <td><span class="badge @(s.Activa ? "bg-success" : "bg-danger")">@(s.Activa ? "Activa" : "Inactiva")</span></td>
+                    <td><button class="btn btn-sm btn-outline-primary" @onclick="() => AbrirModal(s)">Editar</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (mostrarModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">@(editandoId > 0 ? "Editar" : "Nueva") Sucursal</h5>
+                    <button class="btn-close btn-close-white" @onclick="() => mostrarModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input class="form-control" @bind="formNombre" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">País</label>
+                        <select class="form-select" @bind="formPais" @bind:after="ActualizarMoneda">
+                            @if (paises is not null)
+                            {
+                                @foreach (var p in paises)
+                                {
+                                    <option value="@p.Codigo">@p.Nombre (@p.Simbolo @p.Moneda)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Moneda detectada</label>
+                        <input class="form-control" value="@monedaDetectada" disabled />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Dirección</label>
+                        <input class="form-control" @bind="formDireccion" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input class="form-control" @bind="formTelefono" />
+                    </div>
+                    @if (editandoId > 0)
+                    {
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" @bind="formActiva" id="activaCheck" />
+                            <label class="form-check-label" for="activaCheck">Activa</label>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => mostrarModal = false">Cancelar</button>
+                    <button class="btn btn-primary" @onclick="Guardar">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<SucursalDto>? lista;
+    private List<ApiService.PaisDto>? paises;
+    private bool mostrarModal;
+    private int editandoId;
+    private string formNombre = "", formPais = "US", formDireccion = "", formTelefono = "";
+    private bool formActiva = true;
+    private string monedaDetectada = "$ USD";
+
+    protected override async Task OnInitializedAsync()
+    {
+        paises = await Api.GetPaisesAsync();
+        lista = await Api.GetSucursalesAsync();
+    }
+
+    private void AbrirModal(SucursalDto? s)
+    {
+        editandoId = s?.Id ?? 0;
+        formNombre = s?.Nombre ?? "";
+        formPais = s?.Pais ?? "US";
+        formDireccion = s?.Direccion ?? "";
+        formTelefono = s?.Telefono ?? "";
+        formActiva = s?.Activa ?? true;
+        ActualizarMoneda();
+        mostrarModal = true;
+    }
+
+    private void ActualizarMoneda()
+    {
+        var p = paises?.FirstOrDefault(x => x.Codigo == formPais);
+        monedaDetectada = p is not null ? $"{p.Simbolo} {p.Moneda}" : "$ USD";
+    }
+
+    private async Task Guardar()
+    {
+        if (editandoId > 0)
+            await Api.UpdateSucursalAsync(editandoId, new(formNombre, formPais, formDireccion, formTelefono, formActiva));
+        else
+            await Api.CreateSucursalAsync(new(formNombre, formPais, formDireccion, formTelefono));
+        mostrarModal = false;
+        lista = await Api.GetSucursalesAsync();
+    }
+}

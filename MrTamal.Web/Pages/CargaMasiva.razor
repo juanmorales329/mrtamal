@@ -1,0 +1,140 @@
+@page "/carga-masiva"
+@attribute [Authorize]
+@inject ApiService Api
+@inject IJSRuntime JS
+
+<PageTitle>Carga Masiva</PageTitle>
+<h3>Carga Masiva de Datos</h3>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">Plantilla Excel</div>
+            <div class="card-body">
+                <p>Descarga la plantilla, llénala y súbela. Columnas requeridas:</p>
+                <table class="table table-sm table-bordered">
+                    <thead class="table-dark">
+                        <tr><th>Fecha</th><th>Codigo</th><th>Cantidad</th><th>Notas</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>01/04/2026</td><td>SAL</td><td>5000.00</td><td>Salario</td></tr>
+                        <tr><td>05/04/2026</td><td>BON</td><td>1000.00</td><td>Bono</td></tr>
+                    </tbody>
+                </table>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-success btn-sm" @onclick='() => DescargarPlantilla("ingresos")'>
+                        ⬇ Plantilla Ingresos
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" @onclick='() => DescargarPlantilla("egresos")'>
+                        ⬇ Plantilla Egresos
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">Pegar desde Excel</div>
+            <div class="card-body">
+                <p>Copia las celdas de tu Excel (sin encabezado) y pégalas aquí:</p>
+                <p class="text-muted small">Formato: <code>Fecha[Tab]Codigo[Tab]Cantidad[Tab]Notas</code></p>
+                <textarea class="form-control font-monospace" rows="6" @bind="textoPegado"
+                          placeholder="01/04/2026&#9;SAL&#9;5000&#9;Salario&#10;05/04/2026&#9;BON&#9;1000&#9;Bono"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" @bind="tipoSeleccionado">
+                    <option value="ingresos">Ingresos</option>
+                    <option value="egresos">Egresos</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Archivo Excel (.xlsx)</label>
+                <InputFile class="form-control" OnChange="OnArchivoSeleccionado" accept=".xlsx" />
+            </div>
+            <div class="col-md-5 d-flex gap-2 align-items-end">
+                <button class="btn btn-primary" @onclick="CargarDesdeTexto" disabled="@(cargando || string.IsNullOrWhiteSpace(textoPegado))">
+                    📋 Importar texto pegado
+                </button>
+                <button class="btn btn-success" @onclick="CargarDesdeExcel" disabled="@(cargando || archivoExcel is null)">
+                    📂 Importar Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (cargando)
+{
+    <div class="alert alert-info">Procesando...</div>
+}
+
+@if (resultado is not null)
+{
+    <div class="alert @(resultado.Errores.Any() ? "alert-warning" : "alert-success")">
+        <strong>@resultado.Mensaje</strong>
+        @if (resultado.Errores.Any())
+        {
+            <ul class="mt-2 mb-0">
+                @foreach (var e in resultado.Errores)
+                {
+                    <li>@e</li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@code {
+    private string tipoSeleccionado = "ingresos";
+    private string? textoPegado;
+    private IBrowserFile? archivoExcel;
+    private bool cargando;
+    private ResultadoCarga? resultado;
+
+    private void OnArchivoSeleccionado(InputFileChangeEventArgs e) =>
+        archivoExcel = e.File;
+
+    private async Task CargarDesdeTexto()
+    {
+        if (string.IsNullOrWhiteSpace(textoPegado)) return;
+        cargando = true; resultado = null;
+        var res = await Api.CargaMasivaTextoAsync(tipoSeleccionado, textoPegado);
+        if (res is not null) resultado = new ResultadoCarga { Guardados = res.Guardados, Errores = res.Errores, Mensaje = res.Mensaje };
+        cargando = false;
+    }
+
+    private async Task CargarDesdeExcel()
+    {
+        if (archivoExcel is null) return;
+        cargando = true; resultado = null;
+        using var stream = archivoExcel.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+        var res = await Api.CargaMasivaExcelAsync(tipoSeleccionado, stream, archivoExcel.Name);
+        if (res is not null) resultado = new ResultadoCarga { Guardados = res.Guardados, Errores = res.Errores, Mensaje = res.Mensaje };
+        cargando = false;
+    }
+
+    private async Task DescargarPlantilla(string tipo)
+    {
+        var bytes = await Api.DescargarPlantillaAsync(tipo);
+        if (bytes is not null)
+        {
+            var base64 = Convert.ToBase64String(bytes);
+            await JS.InvokeVoidAsync("downloadExcel", base64, $"plantilla_{tipo}.xlsx");
+        }
+    }
+
+    private class ResultadoCarga
+    {
+        public int Guardados { get; set; }
+        public List<string> Errores { get; set; } = [];
+        public string Mensaje { get; set; } = "";
+    }
+}

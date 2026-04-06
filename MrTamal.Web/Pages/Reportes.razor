@@ -1,0 +1,243 @@
+@page "/reportes"
+@attribute [Authorize]
+@inject ApiService Api
+@inject IJSRuntime JS
+@inject AuthService AuthSvc
+
+<PageTitle>Reportes</PageTitle>
+<h3>📊 Reportes</h3>
+
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Tipo de Reporte</label>
+                <select class="form-select" @bind="tipoReporte">
+                    <option value="0">📅 Diario</option>
+                    <option value="1">📆 Semanal</option>
+                    <option value="2">🗓 Mensual</option>
+                    <option value="3">📈 Comparación Anual</option>
+                    <option value="4">📊 Comparación por Mes</option>
+                </select>
+            </div>
+            @if (tipoReporte == 3)
+            {
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Año 1</label>
+                    <input type="number" class="form-control" @bind="anio" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Año 2</label>
+                    <input type="number" class="form-control" @bind="anioComparacion" />
+                </div>
+            }
+            else if (tipoReporte == 4)
+            {
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Año</label>
+                    <input type="number" class="form-control" @bind="anio" />
+                </div>
+            }
+            <div class="col-md-3 d-flex align-items-end gap-2">
+                <button class="btn btn-primary" @onclick="Generar" disabled="@cargando">
+                    @(cargando ? "⏳ Generando..." : "🔍 Generar")
+                </button>
+                @if (resumen is not null)
+                {
+                    <button class="btn btn-danger" @onclick="DescargarPdf" disabled="@descargando">
+                        @(descargando ? "⏳" : "📄 PDF")
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (resumen is not null)
+{
+    <!-- Tarjetas resumen -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm" style="border-left:5px solid #4CAF50 !important">
+                <div class="card-body text-center">
+                    <div class="text-muted small">Total Ingresos</div>
+                    <h3 class="text-success">@simbolo @resumen.TotalIngresos.ToString("N2")</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm" style="border-left:5px solid #F44336 !important">
+                <div class="card-body text-center">
+                    <div class="text-muted small">Total Egresos</div>
+                    <h3 class="text-danger">@simbolo @resumen.TotalEgresos.ToString("N2")</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm" style="border-left:5px solid #2196F3 !important">
+                <div class="card-body text-center">
+                    <div class="text-muted small">Balance</div>
+                    <h3 class="@(resumen.Balance >= 0 ? "text-primary" : "text-warning")">
+                        @simbolo @resumen.Balance.ToString("N2")
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold">Ingresos vs Egresos</div>
+                <div class="card-body">
+                    <canvas id="barChart" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold">Distribución</div>
+                <div class="card-body">
+                    <canvas id="doughnutChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (resumen.Comparaciones?.Any() == true)
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white fw-bold">Comparación</div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr><th>Período</th><th>Ingresos</th><th>Egresos</th><th>Balance</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in resumen.Comparaciones)
+                        {
+                            <tr>
+                                <td class="fw-bold">@c.Periodo</td>
+                                <td class="text-success">@simbolo @c.TotalIngresos.ToString("N2")</td>
+                                <td class="text-danger">@simbolo @c.TotalEgresos.ToString("N2")</td>
+                                <td class="@(c.Balance >= 0 ? "text-primary" : "text-warning") fw-bold">@simbolo @c.Balance.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header" style="background:#E8F5E9;color:#2E7D32">
+                    💰 Ingresos (@resumen.Ingresos.Count)
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th></tr></thead>
+                        <tbody>
+                            @foreach (var i in resumen.Ingresos)
+                            {
+                                <tr>
+                                    <td>@i.Fecha.ToString("dd/MM/yyyy")</td>
+                                    <td>@i.Descripcion</td>
+                                    <td class="text-success fw-bold">@simbolo @i.Cantidad.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header" style="background:#FFEBEE;color:#C62828">
+                    💸 Egresos (@resumen.Egresos.Count)
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th></tr></thead>
+                        <tbody>
+                            @foreach (var e in resumen.Egresos)
+                            {
+                                <tr>
+                                    <td>@e.Fecha.ToString("dd/MM/yyyy")</td>
+                                    <td>@e.Descripcion</td>
+                                    <td class="text-danger fw-bold">@simbolo @e.Cantidad.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private int tipoReporte = 2;
+    private int anio = DateTime.Now.Year;
+    private int anioComparacion = DateTime.Now.Year - 1;
+    private bool cargando, descargando;
+    private MrTamal.Shared.DTOs.ReporteResumen? resumen;
+    private string simbolo = "$";
+
+    protected override async Task OnInitializedAsync()
+    {
+        simbolo = await AuthSvc.GetSimboloMonedaAsync();
+    }
+
+    private async Task Generar()
+    {
+        cargando = true;
+        resumen = await Api.GetReporteAsync(BuildRequest());
+        cargando = false;
+
+        if (resumen is not null)
+            await RenderizarGraficos();
+    }
+
+    private async Task RenderizarGraficos()
+    {
+        await Task.Delay(100); // esperar render del DOM
+
+        if (resumen!.Comparaciones?.Any() == true)
+        {
+            var labels = resumen.Comparaciones.Select(c => c.Periodo).ToArray();
+            var ing = resumen.Comparaciones.Select(c => (double)c.TotalIngresos).ToArray();
+            var egr = resumen.Comparaciones.Select(c => (double)c.TotalEgresos).ToArray();
+            await JS.InvokeVoidAsync("renderBarChart", "barChart", labels, ing, egr);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("renderBarChart", "barChart",
+                new[] { "Ingresos", "Egresos" },
+                new[] { (double)resumen.TotalIngresos, 0 },
+                new[] { 0, (double)resumen.TotalEgresos });
+        }
+
+        await JS.InvokeVoidAsync("renderDoughnutChart", "doughnutChart",
+            (double)resumen.TotalIngresos, (double)resumen.TotalEgresos);
+    }
+
+    private async Task DescargarPdf()
+    {
+        descargando = true;
+        var pdf = await Api.GetReportePdfAsync(BuildRequest());
+        if (pdf is not null)
+        {
+            var base64 = Convert.ToBase64String(pdf);
+            await JS.InvokeVoidAsync("downloadPdf", base64, $"reporte_{DateTime.Now:yyyyMMdd}.pdf");
+        }
+        descargando = false;
+    }
+
+    private MrTamal.Shared.DTOs.ReporteRequest BuildRequest() =>
+        new((MrTamal.Shared.DTOs.TipoReporte)tipoReporte, null, null,
+            tipoReporte >= 3 ? anio : null, null,
+            tipoReporte == 3 ? anioComparacion : null);
+}

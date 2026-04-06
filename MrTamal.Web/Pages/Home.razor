@@ -1,0 +1,88 @@
+﻿@page "/"
+@attribute [Authorize]
+@inject ApiService Api
+
+<PageTitle>Inicio - MrTamal</PageTitle>
+
+<h3>Resumen del Mes</h3>
+
+@if (resumen is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Ingresos</h6>
+                    <h3 class="text-success">Q @resumen.TotalIngresos.ToString("N2")</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Egresos</h6>
+                    <h3 class="text-danger">Q @resumen.TotalEgresos.ToString("N2")</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card @(resumen.Balance >= 0 ? "border-primary" : "border-warning")">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Balance</h6>
+                    <h3 class="@(resumen.Balance >= 0 ? "text-primary" : "text-warning")">Q @resumen.Balance.ToString("N2")</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <h5 class="text-success">Últimos Ingresos</h5>
+            <table class="table table-sm">
+                <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th></tr></thead>
+                <tbody>
+                    @foreach (var i in resumen.Ingresos.TakeLast(5))
+                    {
+                        <tr>
+                            <td>@i.Fecha.ToString("dd/MM")</td>
+                            <td>@i.Descripcion</td>
+                            <td class="text-success">Q @i.Cantidad.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <h5 class="text-danger">Últimos Egresos</h5>
+            <table class="table table-sm">
+                <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th></tr></thead>
+                <tbody>
+                    @foreach (var e in resumen.Egresos.TakeLast(5))
+                    {
+                        <tr>
+                            <td>@e.Fecha.ToString("dd/MM")</td>
+                            <td>@e.Descripcion</td>
+                            <td class="text-danger">Q @e.Cantidad.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private MrTamal.Shared.DTOs.ReporteResumen? resumen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        resumen = await Api.GetReporteAsync(new(
+            MrTamal.Shared.DTOs.TipoReporte.Mensual,
+            null, null, null, null, null
+        ));
+    }
+}

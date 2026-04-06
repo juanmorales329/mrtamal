@@ -1,0 +1,119 @@
+@page "/egresos"
+@attribute [Authorize]
+@inject ApiService Api
+
+<PageTitle>Egresos</PageTitle>
+<h3 class="text-danger">Egresos</h3>
+
+<div class="row mb-3 g-2">
+    <div class="col-auto">
+        <input type="date" class="form-control" @bind="desde" />
+    </div>
+    <div class="col-auto">
+        <input type="date" class="form-control" @bind="hasta" />
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-outline-secondary" @onclick="Cargar">Filtrar</button>
+    </div>
+    <div class="col-auto ms-auto">
+        <button class="btn btn-danger" @onclick="() => AbrirModal(null)">+ Nuevo Egreso</button>
+    </div>
+</div>
+
+@if (lista is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <table class="table table-hover">
+        <thead class="table-danger">
+            <tr><th>Fecha</th><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Notas</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var e in lista)
+            {
+                <tr>
+                    <td>@e.Fecha.ToString("dd/MM/yyyy")</td>
+                    <td><span class="badge bg-secondary">@e.CodigoCatalogo</span></td>
+                    <td>@e.DescripcionCatalogo</td>
+                    <td class="text-danger fw-bold">Q @e.Cantidad.ToString("N2")</td>
+                    <td>@e.Notas</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AbrirModal(e)">✏</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(e.Id)">🗑</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr class="table-danger">
+                <td colspan="3"><strong>Total</strong></td>
+                <td><strong>Q @lista.Sum(e => e.Cantidad).ToString("N2")</strong></td>
+                <td colspan="2"></td>
+            </tr>
+        </tfoot>
+    </table>
+}
+
+@if (mostrarModal)
+{
+    <MovimientoModal Titulo="@(editandoId > 0 ? "Editar Egreso" : "Nuevo Egreso")"
+                     Catalogos="catalogos"
+                     Fecha="@formFecha"
+                     CatalogoId="@formCatalogoId"
+                     Cantidad="@formCantidad"
+                     Notas="@formNotas"
+                     OnGuardar="Guardar"
+                     OnCancelar="() => mostrarModal = false"
+                     FechaChanged="v => formFecha = v"
+                     CatalogoIdChanged="v => formCatalogoId = v"
+                     CantidadChanged="v => formCantidad = v"
+                     NotasChanged="v => formNotas = v" />
+}
+
+@code {
+    private List<MrTamal.Shared.DTOs.MovimientoDto>? lista;
+    private List<MrTamal.Shared.DTOs.CatalogoDto>? catalogos;
+    private DateTime? desde, hasta;
+    private bool mostrarModal;
+    private int editandoId;
+    private DateTime formFecha = DateTime.Today;
+    private int formCatalogoId;
+    private decimal formCantidad;
+    private string? formNotas;
+
+    protected override async Task OnInitializedAsync()
+    {
+        catalogos = await Api.GetCatalogosAsync(MrTamal.Shared.Models.TipoCatalogo.Egreso);
+        await Cargar();
+    }
+
+    private async Task Cargar() => lista = await Api.GetEgresosAsync(desde, hasta);
+
+    private void AbrirModal(MrTamal.Shared.DTOs.MovimientoDto? m)
+    {
+        editandoId = m?.Id ?? 0;
+        formFecha = m?.Fecha ?? DateTime.Today;
+        formCatalogoId = catalogos?.FirstOrDefault()?.Id ?? 0;
+        formCantidad = m?.Cantidad ?? 0;
+        formNotas = m?.Notas;
+        mostrarModal = true;
+    }
+
+    private async Task Guardar()
+    {
+        if (editandoId > 0)
+            await Api.UpdateEgresoAsync(editandoId, new(formFecha, formCatalogoId, formCantidad, formNotas));
+        else
+            await Api.CreateEgresoAsync(new(formFecha, formCatalogoId, formCantidad, formNotas));
+        mostrarModal = false;
+        await Cargar();
+    }
+
+    private async Task Eliminar(int id)
+    {
+        await Api.DeleteEgresoAsync(id);
+        await Cargar();
+    }
+}

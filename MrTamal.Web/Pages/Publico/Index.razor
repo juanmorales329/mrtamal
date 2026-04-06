@@ -1,0 +1,196 @@
+@page "/publico"
+@layout EmptyLayout
+@inject HttpClient Http
+
+<PageTitle>Mr Tamal - Tradicional Mexican Food</PageTitle>
+
+<link rel="stylesheet" href="/css/publico.css" />
+
+<!-- Navbar -->
+<nav class="navbar navbar-dark navbar-custom sticky-top">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-3" href="/publico">
+            <img src="/logo-mrtamal.png" alt="Mr Tamal"
+                 style="height:50px;border-radius:50%;border:2px solid #FF6D00"
+                 onerror="this.style.display='none'" />
+            <div>
+                <div class="fw-bold" style="font-size:1.2rem;letter-spacing:2px">MR TAMAL</div>
+                <div style="font-size:10px;letter-spacing:1px">
+                    <span style="color:#4CAF50">TRADICIONAL</span>
+                    <span class="text-white mx-1">MEXICAN</span>
+                    <span style="color:#F44336">FOOD</span>
+                </div>
+            </div>
+        </a>
+        <a href="tel:4099457861" class="text-white text-decoration-none">
+            <span style="color:#FF6D00">📞</span> 409-945-7861
+        </a>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero-section">
+    <div class="container position-relative" style="z-index:1">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <div class="text-white mb-2" style="font-size:1rem;letter-spacing:3px;opacity:0.8">
+                    ✦ AUTÉNTICA COMIDA MEXICANA ✦
+                </div>
+                <h1 class="display-3 fw-black text-white mb-3" style="line-height:1.1;font-weight:900">
+                    " Como Hecho<br/>en Casa "
+                </h1>
+                <p class="text-white mb-4" style="font-size:1.2rem;opacity:0.9">
+                    Sabores tradicionales que te transportan directo a México.<br/>
+                    Tamales, antojitos y más, preparados con amor.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="#menu" class="btn btn-light btn-lg px-4 fw-bold" style="color:#BF360C;border-radius:50px">
+                        🌮 Ver Menú
+                    </a>
+                    <a href="tel:4099457861" class="btn btn-outline-light btn-lg px-4" style="border-radius:50px">
+                        📞 Ordenar Ahora
+                    </a>
+                </div>
+                <div class="mt-4 d-flex gap-4 text-white">
+                    <div><div class="fw-bold fs-4">⭐ 4.9</div><div style="opacity:0.7;font-size:0.85rem">Calificación</div></div>
+                    <div><div class="fw-bold fs-4">🕐 7AM</div><div style="opacity:0.7;font-size:0.85rem">Abrimos</div></div>
+                    <div><div class="fw-bold fs-4">🚀 Rápido</div><div style="opacity:0.7;font-size:0.85rem">Servicio</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Banner info -->
+<div style="background:#FF6D00;padding:16px 0">
+    <div class="container">
+        <div class="row text-white text-center g-3">
+            <div class="col-md-4">📍 2502 Texas Ave, Texas City, TX</div>
+            <div class="col-md-4">🕐 Lun - Dom: 7:00 AM - 9:00 PM</div>
+            <div class="col-md-4">📞 (409) 945-7861</div>
+        </div>
+    </div>
+</div>
+
+<!-- Menú -->
+<section id="menu" style="background:#FFF8F0;padding:80px 0">
+    <div class="container">
+        <div class="text-center mb-5">
+            <div style="color:#FF6D00;font-size:0.9rem;letter-spacing:3px;font-weight:600">NUESTRO MENÚ</div>
+            <h2 style="font-size:2.5rem;font-weight:800;color:#1C1C1C">Sabores que Enamoran</h2>
+            <p class="text-muted">Preparados con ingredientes frescos y recetas tradicionales</p>
+        </div>
+
+        @if (cargando)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border" style="color:#FF6D00;width:3rem;height:3rem"></div>
+                <p class="mt-3 text-muted">Cargando el menú...</p>
+            </div>
+        }
+        else if (!menuPorCategoria.Any())
+        {
+            <div class="text-center py-5">
+                <div style="font-size:80px">🌮</div>
+                <h4 class="text-muted mt-3">El menú estará disponible pronto</h4>
+            </div>
+        }
+        else
+        {
+            @foreach (var cat in menuPorCategoria)
+            {
+                <div class="mb-5">
+                    <h3 class="categoria-title">@cat.Key</h3>
+                    <div class="row g-4">
+                        @foreach (var item in cat.Value)
+                        {
+                            <div class="col-lg-4 col-md-6">
+                                <div class="card menu-card h-100">
+                                    @if (!string.IsNullOrEmpty(item.ImagenUrl))
+                                    {
+                                        <img src="@(apiBase + item.ImagenUrl)" class="card-img-top"
+                                             alt="@item.Nombre"
+                                             onerror="this.style.display='none'" />
+                                    }
+                                    else
+                                    {
+                                        <div class="img-placeholder">🌮</div>
+                                    }
+                                    <div class="card-body p-4">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h5 class="card-title mb-0 fw-bold">@item.Nombre</h5>
+                                            <span class="precio-tag">$@item.Precio.ToString("N2")</span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(item.Descripcion))
+                                        {
+                                            <p class="card-text text-muted">@item.Descripcion</p>
+                                        }
+                                        <span class="badge-categoria">@item.Categoria</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</section>
+
+<!-- Contacto -->
+<section class="contact-section py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="text-white fw-bold">Encuéntranos</h2>
+            <p style="color:#aaa">Estamos listos para servirte</p>
+        </div>
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-3">
+                <div class="contact-card">
+                    <div style="font-size:2.5rem;margin-bottom:12px">📍</div>
+                    <h6 class="text-white fw-bold">Dirección</h6>
+                    <p style="color:#aaa;margin:0">2502 Texas Ave<br/>Texas City, TX</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="contact-card">
+                    <div style="font-size:2.5rem;margin-bottom:12px">📞</div>
+                    <h6 class="text-white fw-bold">Teléfono</h6>
+                    <p style="color:#FF6D00;font-size:1.3rem;font-weight:700;margin:0">(409) 945-7861</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="contact-card">
+                    <div style="font-size:2.5rem;margin-bottom:12px">🕐</div>
+                    <h6 class="text-white fw-bold">Horario</h6>
+                    <p style="color:#aaa;margin:0">Lun - Dom<br/>7:00 AM - 9:00 PM</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer style="background:#111;padding:20px 0;text-align:center">
+    <p style="color:#555;margin:0;font-size:0.85rem">
+        © 2026 Mr Tamal - Tradicional Mexican Food. Texas City, TX
+    </p>
+</footer>
+
+@code {
+    private const string apiBase = "http://localhost:5176";
+    private bool cargando = true;
+    private Dictionary<string, List<MenuItem>> menuPorCategoria = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var items = await Http.GetFromJsonAsync<List<MenuItem>>($"{apiBase}/api/menu");
+            menuPorCategoria = (items ?? [])
+                .GroupBy(i => i.Categoria)
+                .ToDictionary(g => g.Key, g => g.ToList());
+        }
+        catch { }
+        cargando = false;
+    }
+}
