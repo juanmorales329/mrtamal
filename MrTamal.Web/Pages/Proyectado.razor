@@ -7,36 +7,70 @@
 
 <PageTitle>Proyectado de Ventas</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0">🎯 Proyectado de Ventas</h3>
-    <div class="d-flex gap-2">
-        <select class="form-select form-select-sm" style="width:100px" @bind="anioSeleccionado" @bind:after="Cargar">
-            @for (int a = DateTime.Now.Year + 1; a >= DateTime.Now.Year - 3; a--)
-            {
-                <option value="@a">@a</option>
-            }
-        </select>
+<style>
+    .proy-header { background: linear-gradient(135deg, #FF6D00, #FF8F00); color: white; border-radius: 12px; padding: 1.2rem 1.5rem; margin-bottom: 1.5rem; }
+    .proy-card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 1.25rem; overflow: hidden; }
+    .proy-card .card-header { font-weight: 700; font-size: .95rem; padding: .75rem 1.1rem; border-bottom: 1px solid rgba(0,0,0,.08); }
+    .kpi-card { border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 1rem 1.2rem; text-align: center; background: white; }
+    .kpi-card .kpi-label { font-size: .75rem; color: #888; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .25rem; }
+    .kpi-card .kpi-value { font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+    .proy-table { width: 100%; border-collapse: collapse; }
+    .proy-table th { background: #f5f5f5; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: #555; padding: .6rem .9rem; border-bottom: 2px solid #e0e0e0; white-space: nowrap; }
+    .proy-table td { padding: .65rem .9rem; border-bottom: 1px solid #f0f0f0; font-size: .88rem; vertical-align: middle; }
+    .proy-table tr:last-child td { border-bottom: none; }
+    .proy-table tr:hover td { background: #fafafa; }
+    .mes-row td { background: #FFF8F0 !important; font-size: .84rem; }
+    .mes-row td:first-child { padding-left: 2rem; }
+    .mes-row:hover td { background: #FFF3E0 !important; }
+    .progress-wrap { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+    .progress-bar-bg { flex: 1; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+    .btn-expand { border: 1px solid #ddd; background: white; border-radius: 6px; padding: 3px 10px; font-size: .78rem; cursor: pointer; white-space: nowrap; color: #555; }
+    .btn-expand:hover { background: #f5f5f5; }
+    @@media (max-width: 768px) {
+        .proy-table th, .proy-table td { padding: .5rem .6rem; font-size: .8rem; }
+        .kpi-card .kpi-value { font-size: 1.2rem; }
+        .hide-mobile { display: none !important; }
+        .mes-row td:first-child { padding-left: 1.2rem; }
+    }
+    @@media (max-width: 480px) {
+        .proy-table th, .proy-table td { padding: .4rem .45rem; font-size: .75rem; }
+        .progress-wrap { min-width: 80px; }
+    }
+</style>
+
+<!-- Header -->
+<div class="proy-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <div style="font-size:1.4rem;font-weight:800">🎯 Proyectado de Ventas</div>
+        <div style="opacity:.85;font-size:.85rem">Control de metas y cumplimiento</div>
     </div>
+    <select class="form-select form-select-sm" style="width:100px;border-radius:8px" @bind="anioSeleccionado" @bind:after="Cargar">
+        @for (int a = DateTime.Now.Year + 1; a >= DateTime.Now.Year - 3; a--)
+        {
+            <option value="@a">@a</option>
+        }
+    </select>
 </div>
 
 <!-- Configurar Meta -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header fw-bold" style="background:#FF6D00;color:white">⚙ Configurar Meta Anual @anioSeleccionado</div>
+<div class="proy-card card">
+    <div class="card-header" style="background:#FF6D00;color:white">⚙ Configurar Meta Anual @anioSeleccionado</div>
     <div class="card-body">
         <div class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label">Meta de Ventas Anual (@simbolo)</label>
+            <div class="col-12 col-sm-5 col-md-3">
+                <label class="form-label fw-semibold" style="font-size:.85rem">Meta de Ventas Anual (@simbolo)</label>
                 <input type="number" class="form-control" @bind="formMeta" step="100" />
             </div>
-            <div class="col-md-3">
-                <div class="form-check mt-4">
+            <div class="col-12 col-sm-5 col-md-3">
+                <div class="form-check mt-sm-4">
                     <input class="form-check-input" type="checkbox" @bind="formExcluirDomingos" id="domCheck" />
-                    <label class="form-check-label fw-bold" for="domCheck">Excluir todos los domingos</label>
+                    <label class="form-check-label fw-semibold" for="domCheck" style="font-size:.88rem">Excluir domingos</label>
                 </div>
             </div>
-            <div class="col-md-2">
-                <button class="btn w-100 text-white" style="background:#FF6D00" @onclick="GuardarMeta">
-                    💾 Guardar Meta
+            <div class="col-12 col-sm-2 col-md-2">
+                <button class="btn w-100 text-white fw-bold" style="background:#FF6D00;border-radius:8px" @onclick="GuardarMeta">
+                    💾 Guardar
                 </button>
             </div>
         </div>
@@ -45,152 +79,142 @@
 
 @if (resumen is not null)
 {
-    <!-- Tarjetas resumen -->
+    <!-- KPIs -->
     <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3" style="border-left:5px solid #FF6D00 !important">
-                <div class="text-muted small">Meta Anual</div>
-                <h4 style="color:#FF6D00">@simbolo @resumen.MetaAnual.ToString("N2")</h4>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card" style="border-left:4px solid #FF6D00">
+                <div class="kpi-label">Meta Anual</div>
+                <div class="kpi-value" style="color:#FF6D00">@simbolo @FormatK(resumen.MetaAnual)</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3" style="border-left:5px solid #4CAF50 !important">
-                <div class="text-muted small">Venta Real</div>
-                <h4 class="text-success">@simbolo @resumen.VentaReal.ToString("N2")</h4>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card" style="border-left:4px solid #4CAF50">
+                <div class="kpi-label">Venta Real</div>
+                <div class="kpi-value text-success">@simbolo @FormatK(resumen.VentaReal)</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3" style="border-left:5px solid #2196F3 !important">
-                <div class="text-muted small">Días Laborables</div>
-                <h4 class="text-primary">@resumen.DiasLaborables días</h4>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card" style="border-left:4px solid #2196F3">
+                <div class="kpi-label">Días Laborables</div>
+                <div class="kpi-value text-primary">@resumen.DiasLaborables</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3"
-                 style="border-left:5px solid @(resumen.PorcentajeCumplimiento >= 100 ? "#4CAF50" : "#F44336") !important">
-                <div class="text-muted small">Cumplimiento</div>
-                <h4 class="@(resumen.PorcentajeCumplimiento >= 100 ? "text-success" : "text-danger")">
-                    @resumen.PorcentajeCumplimiento%
-                </h4>
+        <div class="col-6 col-md-3">
+            @{ var pctAnual = resumen.PorcentajeCumplimiento; var colorAnual = pctAnual >= 100 ? "#4CAF50" : pctAnual >= 70 ? "#FF9800" : "#F44336"; }
+            <div class="kpi-card" style="border-left:4px solid @colorAnual">
+                <div class="kpi-label">Cumplimiento</div>
+                <div class="kpi-value" style="color:@colorAnual">@pctAnual%</div>
             </div>
         </div>
     </div>
 
-    <!-- Cuatrimestres fijos: 100k cada uno -->
+    <!-- Cuatrimestres -->
     @if (resumen.Cuatrimestres?.Any() == true)
     {
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header fw-bold text-white" style="background:#FF6D00">🎯 Control por Cuatrimestre (Meta: @simbolo 100,000 c/u)</div>
-        <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-                <thead class="table-secondary">
-                    <tr><th>Cuatrimestre</th><th>Período</th><th>Meta</th><th>Real</th><th>Diferencia</th><th>Avance</th><th></th></tr>
-                </thead>
-                <tbody>
-                    @foreach (var c in resumen.Cuatrimestres)
-                    {
-                        var color = c.PorcentajeCumplimiento >= 100 ? "#4CAF50" : c.PorcentajeCumplimiento >= 70 ? "#FF9800" : "#F44336";
-                        var pct = Math.Min((double)c.PorcentajeCumplimiento, 100);
-                        var expandido = cuatrimestresExpandidos.Contains(c.Numero);
-                        var mesesDelCuatrimestre = resumen.DesgloseMensual
-                            .Where(m => m.Mes >= (c.Numero - 1) * 4 + 1 && m.Mes <= c.Numero * 4)
-                            .ToList();
+        <div class="proy-card card">
+            <div class="card-header text-white" style="background:#FF6D00">
+                🎯 Control por Cuatrimestre &nbsp;<span style="font-weight:400;font-size:.82rem;opacity:.9">(Meta: @simbolo 100,000 c/u)</span>
+            </div>
+            <div style="overflow-x:auto">
+                <table class="proy-table">
+                    <thead>
                         <tr>
-                            <td class="fw-bold">@c.Numero°</td>
-                            <td>@c.Periodo</td>
-                            <td>@simbolo @c.Meta.ToString("N2")</td>
-                            <td class="text-success fw-bold">@simbolo @c.VentaReal.ToString("N2")</td>
-                            <td class="@(c.Diferencia >= 0 ? "text-success" : "text-danger") fw-bold">
-                                @(c.Diferencia >= 0 ? "+" : "")@simbolo @c.Diferencia.ToString("N2")
-                            </td>
-                            <td style="min-width:140px">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="progress flex-grow-1" style="height:10px">
-                                        <div class="progress-bar" style="width:@pct%;background:@color"></div>
-                                    </div>
-                                    <small class="fw-bold" style="color:@color;white-space:nowrap">@c.PorcentajeCumplimiento%</small>
-                                </div>
-                            </td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleCuatrimestre(c.Numero)">
-                                    @(expandido ? "▲ Contraer" : "▼ Mostrar más")
-                                </button>
-                            </td>
+                            <th>#</th>
+                            <th>Período</th>
+                            <th>Meta</th>
+                            <th>Real</th>
+                            <th class="hide-mobile">Diferencia</th>
+                            <th>Avance</th>
+                            <th></th>
                         </tr>
-                        @if (expandido)
+                    </thead>
+                    <tbody>
+                        @foreach (var c in resumen.Cuatrimestres)
                         {
+                            var cc = c;
+                            var ccolor = cc.PorcentajeCumplimiento >= 100 ? "#4CAF50" : cc.PorcentajeCumplimiento >= 70 ? "#FF9800" : "#F44336";
+                            var cpct = Math.Min((double)cc.PorcentajeCumplimiento, 100);
+                            var expandido = cuatrimestresExpandidos.Contains(cc.Numero);
+                            var mesesC = resumen.DesgloseMensual
+                                .Where(m => m.Mes >= (cc.Numero - 1) * 4 + 1 && m.Mes <= cc.Numero * 4)
+                                .ToList();
                             <tr>
-                                <td colspan="7" class="p-0">
-                                    <table class="table table-sm mb-0" style="background:#FFF8F0">
-                                        <thead>
-                                            <tr style="background:#FFE0B2">
-                                                <th class="ps-4">Mes</th>
-                                                <th>Días Lab.</th>
-                                                <th>Meta</th>
-                                                <th>Real</th>
-                                                <th>Diferencia</th>
-                                                <th>Estado</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var m in mesesDelCuatrimestre)
-                                            {
-                                                <tr>
-                                                    <td class="ps-4 fw-bold">@m.NombreMes</td>
-                                                    <td>@m.DiasLaborables</td>
-                                                    <td>@simbolo @m.MetaMes.ToString("N2")</td>
-                                                    <td>@simbolo @m.VentaReal.ToString("N2")</td>
-                                                    <td class="@(m.Diferencia >= 0 ? "text-success" : "text-danger") fw-bold">
-                                                        @(m.Diferencia >= 0 ? "+" : "")@simbolo @m.Diferencia.ToString("N2")
-                                                    </td>
-                                                    <td>
-                                                        @if (m.VentaReal == 0 && m.MetaMes > 0)
-                                                        { <span class="badge bg-secondary">Pendiente</span> }
-                                                        else if (m.Cumplido)
-                                                        { <span class="badge bg-success">✓ Cumplido</span> }
-                                                        else
-                                                        { <span class="badge bg-danger">✗ Bajo meta</span> }
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
+                                <td><span style="font-weight:700;font-size:.95rem">@cc.Numero°</span></td>
+                                <td style="white-space:nowrap">@cc.Periodo</td>
+                                <td style="white-space:nowrap">@simbolo @cc.Meta.ToString("N0")</td>
+                                <td style="white-space:nowrap;font-weight:700;color:#2E7D32">@simbolo @cc.VentaReal.ToString("N0")</td>
+                                <td class="hide-mobile" style="white-space:nowrap;font-weight:700;color:@ccolor">
+                                    @(cc.Diferencia >= 0 ? "+" : "")@simbolo @cc.Diferencia.ToString("N0")
+                                </td>
+                                <td>
+                                    <div class="progress-wrap">
+                                        <div class="progress-bar-bg">
+                                            <div class="progress-bar-fill" style="width:@cpct%;background:@ccolor"></div>
+                                        </div>
+                                        <span style="font-weight:700;font-size:.8rem;color:@ccolor;min-width:36px">@cc.PorcentajeCumplimiento%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <button class="btn-expand" @onclick="() => ToggleCuatrimestre(cc.Numero)">
+                                        @(expandido ? "▲ Contraer" : "▼ Ver meses")
+                                    </button>
                                 </td>
                             </tr>
+                            @if (expandido)
+                            {
+                                @foreach (var mes in mesesC)
+                                {
+                                    var mcolor = mes.Diferencia >= 0 ? "#2E7D32" : "#C62828";
+                                    <tr class="mes-row">
+                                        <td></td>
+                                        <td style="font-weight:600">@mes.NombreMes</td>
+                                        <td style="white-space:nowrap">@simbolo @mes.MetaMes.ToString("N0")</td>
+                                        <td style="white-space:nowrap;font-weight:600">@simbolo @mes.VentaReal.ToString("N0")</td>
+                                        <td class="hide-mobile" style="white-space:nowrap;font-weight:600;color:@mcolor">
+                                            @(mes.Diferencia >= 0 ? "+" : "")@simbolo @mes.Diferencia.ToString("N0")
+                                        </td>
+                                        <td colspan="2">
+                                            @if (mes.VentaReal == 0 && mes.MetaMes > 0)
+                                            { <span class="badge bg-secondary" style="font-size:.72rem">Pendiente</span> }
+                                            else if (mes.Cumplido)
+                                            { <span class="badge bg-success" style="font-size:.72rem">✓ Cumplido</span> }
+                                            else
+                                            { <span class="badge bg-danger" style="font-size:.72rem">✗ Bajo meta</span> }
+                                        </td>
+                                    </tr>
+                                }
+                            }
                         }
-                    }
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
     }
 
-    <!-- Tabla de metas por período -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header fw-bold bg-dark text-white">📊 Metas por Período</div>
-        <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-                <thead class="table-secondary">
-                    <tr><th>Período</th><th>Días</th><th>Meta (@simbolo)</th></tr>
-                </thead>
+    <!-- Metas por período -->
+    <div class="proy-card card">
+        <div class="card-header bg-dark text-white">📊 Metas por Período</div>
+        <div style="overflow-x:auto">
+            <table class="proy-table">
+                <thead><tr><th>Período</th><th>Días</th><th>Meta (@simbolo)</th></tr></thead>
                 <tbody>
-                    <tr><td>📅 Diario</td><td>1</td><td class="fw-bold">@simbolo @resumen.MetaDiaria.ToString("N2")</td></tr>
-                    <tr><td>📆 Semanal</td><td>~6</td><td class="fw-bold">@simbolo @resumen.MetaSemanal.ToString("N2")</td></tr>
-                    <tr><td>🗓 Mensual</td><td>~@(resumen.DiasLaborables/12)</td><td class="fw-bold">@simbolo @resumen.MetaMensual.ToString("N2")</td></tr>
-                    <tr><td>📋 Bimestral (2 meses)</td><td>~@(resumen.DiasLaborables/6)</td><td class="fw-bold">@simbolo @resumen.MetaBimestral.ToString("N2")</td></tr>
-                    <tr><td>📋 Trimestral (3 meses)</td><td>~@(resumen.DiasLaborables/4)</td><td class="fw-bold">@simbolo @resumen.MetaTrimestral.ToString("N2")</td></tr>
-                    <tr><td>📋 Cuatrimestral (4 meses)</td><td>~@(resumen.DiasLaborables/3)</td><td class="fw-bold">@simbolo @resumen.MetaCuatrimestral.ToString("N2")</td></tr>
-                    <tr><td>📋 Semestral (6 meses)</td><td>~@(resumen.DiasLaborables/2)</td><td class="fw-bold">@simbolo @resumen.MetaSemestral.ToString("N2")</td></tr>
+                    <tr><td>📅 Diario</td><td>1</td><td style="font-weight:700">@simbolo @resumen.MetaDiaria.ToString("N2")</td></tr>
+                    <tr><td>📆 Semanal</td><td>~6</td><td style="font-weight:700">@simbolo @resumen.MetaSemanal.ToString("N2")</td></tr>
+                    <tr><td>🗓 Mensual</td><td>~@(resumen.DiasLaborables/12)</td><td style="font-weight:700">@simbolo @resumen.MetaMensual.ToString("N2")</td></tr>
+                    <tr><td>📋 Bimestral</td><td>~@(resumen.DiasLaborables/6)</td><td style="font-weight:700">@simbolo @resumen.MetaBimestral.ToString("N2")</td></tr>
+                    <tr><td>📋 Trimestral</td><td>~@(resumen.DiasLaborables/4)</td><td style="font-weight:700">@simbolo @resumen.MetaTrimestral.ToString("N2")</td></tr>
+                    <tr><td>📋 Cuatrimestral</td><td>~@(resumen.DiasLaborables/3)</td><td style="font-weight:700">@simbolo @resumen.MetaCuatrimestral.ToString("N2")</td></tr>
+                    <tr><td>📋 Semestral</td><td>~@(resumen.DiasLaborables/2)</td><td style="font-weight:700">@simbolo @resumen.MetaSemestral.ToString("N2")</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
     <!-- Gráfica -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+    <div class="proy-card card">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span>📈 Proyectado vs Real</span>
-            <select class="form-select form-select-sm w-auto" @bind="periodoGrafica" @bind:after="ActualizarGrafica">
+            <select class="form-select form-select-sm" style="width:auto;border-radius:8px" @bind="periodoGrafica" @bind:after="ActualizarGrafica">
                 <option value="mensual">Por Mes</option>
                 <option value="bimestral">Bimestral</option>
                 <option value="trimestral">Trimestral</option>
@@ -198,43 +222,38 @@
                 <option value="semestral">Semestral</option>
             </select>
         </div>
-        <div class="card-body">
-            <canvas id="proyChart" height="100"></canvas>
+        <div class="card-body p-2 p-md-3">
+            <canvas id="proyChart" height="120"></canvas>
         </div>
     </div>
 
-    <!-- Desglose mensual -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header fw-bold bg-dark text-white">📅 Desglose Mensual</div>
-        <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-                <thead class="table-secondary">
-                    <tr><th>Mes</th><th>Días Lab.</th><th>Meta</th><th>Real</th><th>Diferencia</th><th>Estado</th></tr>
+    <!-- Desglose mensual completo -->
+    <div class="proy-card card">
+        <div class="card-header bg-dark text-white">📅 Desglose Mensual</div>
+        <div style="overflow-x:auto">
+            <table class="proy-table">
+                <thead>
+                    <tr><th>Mes</th><th class="hide-mobile">Días Lab.</th><th>Meta</th><th>Real</th><th class="hide-mobile">Diferencia</th><th>Estado</th></tr>
                 </thead>
                 <tbody>
                     @foreach (var m in resumen.DesgloseMensual)
                     {
+                        var dcolor = m.Diferencia >= 0 ? "#2E7D32" : "#C62828";
                         <tr>
-                            <td class="fw-bold">@m.NombreMes</td>
-                            <td>@m.DiasLaborables</td>
-                            <td>@simbolo @m.MetaMes.ToString("N2")</td>
-                            <td>@simbolo @m.VentaReal.ToString("N2")</td>
-                            <td class="@(m.Diferencia >= 0 ? "text-success" : "text-danger") fw-bold">
-                                @(m.Diferencia >= 0 ? "+" : "")@simbolo @m.Diferencia.ToString("N2")
+                            <td style="font-weight:700">@m.NombreMes</td>
+                            <td class="hide-mobile">@m.DiasLaborables</td>
+                            <td style="white-space:nowrap">@simbolo @m.MetaMes.ToString("N0")</td>
+                            <td style="white-space:nowrap;font-weight:600">@simbolo @m.VentaReal.ToString("N0")</td>
+                            <td class="hide-mobile" style="white-space:nowrap;font-weight:700;color:@dcolor">
+                                @(m.Diferencia >= 0 ? "+" : "")@simbolo @m.Diferencia.ToString("N0")
                             </td>
                             <td>
                                 @if (m.VentaReal == 0 && m.MetaMes > 0)
-                                {
-                                    <span class="badge bg-secondary">Pendiente</span>
-                                }
+                                { <span class="badge bg-secondary" style="font-size:.72rem">Pendiente</span> }
                                 else if (m.Cumplido)
-                                {
-                                    <span class="badge bg-success">✓ Cumplido</span>
-                                }
+                                { <span class="badge bg-success" style="font-size:.72rem">✓ Cumplido</span> }
                                 else
-                                {
-                                    <span class="badge bg-danger">✗ Bajo meta</span>
-                                }
+                                { <span class="badge bg-danger" style="font-size:.72rem">✗ Bajo meta</span> }
                             </td>
                         </tr>
                     }
@@ -244,25 +263,24 @@
     </div>
 
     <!-- Días no laborables -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center bg-dark text-white">
+    <div class="proy-card card">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
             <span>🚫 Días No Laborables @anioSeleccionado</span>
-            <button class="btn btn-sm btn-outline-light" @onclick="() => mostrarAgregarDia = true">+ Agregar</button>
+            <button class="btn btn-sm btn-outline-light" style="border-radius:6px" @onclick="() => mostrarAgregarDia = true">+ Agregar</button>
         </div>
         <div class="card-body">
             @if (!resumen.DiasNoLaborables.Any())
             {
-                <p class="text-muted mb-0">No hay días no laborables registrados.</p>
+                <p class="text-muted mb-0" style="font-size:.88rem">No hay días no laborables registrados.</p>
             }
             else
             {
                 <div class="d-flex flex-wrap gap-2">
                     @foreach (var d in resumen.DiasNoLaborables)
                     {
-                        <span class="badge bg-danger d-flex align-items-center gap-1" style="font-size:0.85rem;padding:6px 10px">
+                        <span class="badge bg-danger d-flex align-items-center gap-1" style="font-size:.8rem;padding:5px 9px;border-radius:6px">
                             @d.Fecha.ToString("dd/MM") @(d.Descripcion is not null ? $"- {d.Descripcion}" : "")
-                            <button class="btn-close btn-close-white ms-1" style="font-size:0.6rem"
-                                    @onclick="() => EliminarDia(d.Id)"></button>
+                            <button class="btn-close btn-close-white ms-1" style="font-size:.55rem" @onclick="() => EliminarDia(d.Id)"></button>
                         </span>
                     }
                 </div>
@@ -272,28 +290,27 @@
 }
 else if (sinMeta)
 {
-    <div class="alert alert-info">
+    <div class="alert alert-info" style="border-radius:10px">
         No hay meta configurada para @anioSeleccionado. Ingresa la meta anual arriba y guarda.
     </div>
 }
 
-<!-- Modal agregar día no laborable -->
 @if (mostrarAgregarDia)
 {
     <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
-        <div class="modal-dialog">
-            <div class="modal-content">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius:12px;overflow:hidden">
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title">🚫 Agregar Día No Laborable</h5>
                     <button class="btn-close btn-close-white" @onclick="() => mostrarAgregarDia = false"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Fecha</label>
+                        <label class="form-label fw-semibold">Fecha</label>
                         <input type="date" class="form-control" @bind="formFechaDia" />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Descripción (opcional)</label>
+                        <label class="form-label fw-semibold">Descripción (opcional)</label>
                         <input class="form-control" @bind="formDescDia" placeholder="Ej: Navidad, Feriado nacional..." />
                     </div>
                 </div>
@@ -324,10 +341,12 @@ else if (sinMeta)
             cuatrimestresExpandidos.Add(numero);
     }
 
+    private static string FormatK(decimal v) =>
+        v >= 1000 ? $"{v / 1000:N1}k" : v.ToString("N0");
+
     protected override async Task OnInitializedAsync()
     {
         simbolo = await AuthSvc.GetSimboloMonedaAsync();
-        // Asegurar que el token esté en el header
         var token = await localStorage.GetItemAsync<string>("authToken");
         if (!string.IsNullOrEmpty(token))
             Http.DefaultRequestHeaders.Authorization =
@@ -338,6 +357,7 @@ else if (sinMeta)
     private async Task Cargar()
     {
         sinMeta = false; resumen = null;
+        cuatrimestresExpandidos.Clear();
         var resp = await Http.GetAsync($"https://mrtamal.onrender.com/api/proyectado/{anioSeleccionado}");
         if (resp.IsSuccessStatusCode)
         {
@@ -374,7 +394,6 @@ else if (sinMeta)
     }
 
     private string periodoGrafica = "mensual";
-
     private async Task ActualizarGrafica() => await RenderGrafica();
 
     private async Task RenderGrafica()
@@ -382,30 +401,19 @@ else if (sinMeta)
         if (resumen is null) return;
         try
         {
-            string[] labels;
-            double[] metas, reales;
-
+            string[] labels; double[] metas, reales;
             switch (periodoGrafica)
             {
-                case "bimestral":
-                    (labels, metas, reales) = AgruparPeriodos(2);
-                    break;
-                case "trimestral":
-                    (labels, metas, reales) = AgruparPeriodos(3);
-                    break;
-                case "cuatrimestral":
-                    (labels, metas, reales) = AgruparPeriodos(4);
-                    break;
-                case "semestral":
-                    (labels, metas, reales) = AgruparPeriodos(6);
-                    break;
-                default: // mensual
+                case "bimestral":     (labels, metas, reales) = AgruparPeriodos(2); break;
+                case "trimestral":    (labels, metas, reales) = AgruparPeriodos(3); break;
+                case "cuatrimestral": (labels, metas, reales) = AgruparPeriodos(4); break;
+                case "semestral":     (labels, metas, reales) = AgruparPeriodos(6); break;
+                default:
                     labels = resumen.DesgloseMensual.Select(m => m.NombreMes[..3]).ToArray();
-                    metas = resumen.DesgloseMensual.Select(m => (double)m.MetaMes).ToArray();
+                    metas  = resumen.DesgloseMensual.Select(m => (double)m.MetaMes).ToArray();
                     reales = resumen.DesgloseMensual.Select(m => (double)m.VentaReal).ToArray();
                     break;
             }
-
             await JS.InvokeVoidAsync("renderProyChart", "proyChart", labels, metas, reales);
         }
         catch { }
@@ -415,21 +423,14 @@ else if (sinMeta)
     {
         var grupos = resumen!.DesgloseMensual
             .Select((m, i) => new { m, grupo = i / mesesPorPeriodo })
-            .GroupBy(x => x.grupo)
-            .ToList();
-
+            .GroupBy(x => x.grupo).ToList();
         var labels = grupos.Select(g =>
         {
-            var primero = g.First().m;
-            var ultimo = g.Last().m;
-            return primero.Mes == ultimo.Mes
-                ? primero.NombreMes[..3]
-                : $"{primero.NombreMes[..3]}-{ultimo.NombreMes[..3]}";
+            var p = g.First().m; var u = g.Last().m;
+            return p.Mes == u.Mes ? p.NombreMes[..3] : $"{p.NombreMes[..3]}-{u.NombreMes[..3]}";
         }).ToArray();
-
-        var metas = grupos.Select(g => (double)g.Sum(x => x.m.MetaMes)).ToArray();
+        var metas  = grupos.Select(g => (double)g.Sum(x => x.m.MetaMes)).ToArray();
         var reales = grupos.Select(g => (double)g.Sum(x => x.m.VentaReal)).ToArray();
-
         return (labels, metas, reales);
     }
 }
