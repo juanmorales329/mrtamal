@@ -14,7 +14,7 @@
     .kpi-card { border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 1rem 1.2rem; text-align: center; background: white; }
     .kpi-card .kpi-label { font-size: .75rem; color: #888; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .25rem; }
     .kpi-card .kpi-value { font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
-    .proy-table { width: 100%; border-collapse: collapse; }
+    .proy-table { width: 100%; border-collapse: collapse; table-layout: auto; }
     .proy-table th { background: #f5f5f5; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: #555; padding: .6rem .9rem; border-bottom: 2px solid #e0e0e0; white-space: nowrap; }
     .proy-table td { padding: .65rem .9rem; border-bottom: 1px solid #f0f0f0; font-size: .88rem; vertical-align: middle; }
     .proy-table tr:last-child td { border-bottom: none; }
@@ -23,10 +23,11 @@
     .mes-row td:first-child { padding-left: 2rem; }
     .mes-row:hover td { background: #FFF3E0 !important; }
     .progress-wrap { display: flex; align-items: center; gap: 8px; min-width: 120px; }
-    .progress-bar-bg { flex: 1; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; }
+    .progress-bar-bg { flex: 1; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; min-width: 60px; }
     .progress-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
     .btn-expand { border: 1px solid #ddd; background: white; border-radius: 6px; padding: 3px 10px; font-size: .78rem; cursor: pointer; white-space: nowrap; color: #555; }
     .btn-expand:hover { background: #f5f5f5; }
+    .proy-chart-wrap { position: relative; width: 100%; }
     @@media (max-width: 768px) {
         .proy-table th, .proy-table td { padding: .5rem .6rem; font-size: .8rem; }
         .kpi-card .kpi-value { font-size: 1.2rem; }
@@ -239,8 +240,8 @@
                 <option value="semestral">Semestral</option>
             </select>
         </div>
-        <div class="card-body p-2 p-md-3">
-            <canvas id="proyChart" height="120"></canvas>
+        <div class="card-body p-2 p-md-3" style="position:relative;height:280px">
+            <canvas id="proyChart"></canvas>
         </div>
     </div>
 
