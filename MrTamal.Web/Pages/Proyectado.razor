@@ -45,6 +45,9 @@
         <div style="font-size:1.4rem;font-weight:800">🎯 Proyectado de Ventas</div>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button class="btn btn-sm btn-light fw-semibold" @onclick="() => mostrarConfigMeta = true" title="Configurar meta">
+            ⚙ Meta
+        </button>
         @if (resumen is not null)
         {
             <button class="btn btn-sm btn-light fw-semibold" @onclick="DescargarPdf" disabled="@descargando">
@@ -62,6 +65,34 @@
         </select>
     </div>
 </div>
+
+@if (mostrarConfigMeta)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius:12px;overflow:hidden">
+                <div class="modal-header text-white" style="background:#FF6D00">
+                    <h5 class="modal-title">⚙ Configurar Meta Anual @anioSeleccionado</h5>
+                    <button class="btn-close btn-close-white" @onclick="() => mostrarConfigMeta = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Meta de Ventas Anual (@simbolo)</label>
+                        <input type="number" class="form-control" @bind="formMeta" step="100" />
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" @bind="formExcluirDomingos" id="domCheck" />
+                        <label class="form-check-label fw-semibold" for="domCheck">Excluir todos los domingos</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => mostrarConfigMeta = false">Cancelar</button>
+                    <button class="btn text-white fw-bold" style="background:#FF6D00" @onclick="GuardarMetaYCerrar">💾 Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @if (resumen is not null)
 {
@@ -321,11 +352,18 @@ else if (sinMeta)
     private string? formDescDia;
     private HashSet<int> cuatrimestresExpandidos = new();
     private bool descargando, descargandoExcel;
+    private bool mostrarConfigMeta;
 
     private void ToggleCuatrimestre(int numero)
     {
         if (!cuatrimestresExpandidos.Remove(numero))
             cuatrimestresExpandidos.Add(numero);
+    }
+
+    private async Task GuardarMetaYCerrar()
+    {
+        await GuardarMeta();
+        mostrarConfigMeta = false;
     }
 
     private static string FormatK(decimal v) =>
