@@ -11,6 +11,16 @@ public static class CatalogoEndpoints
     {
         var group = app.MapGroup("/api/catalogos").WithTags("Catalogos").RequireAuthorization();
 
+        group.MapGet("/siguiente-codigo/{tipo}", async (TipoCatalogo tipo, AppDbContext db) =>
+        {
+            var rango = tipo == TipoCatalogo.Ingreso ? (1001, 1999) : (2001, 2999);
+            var usados = await db.Catalogos.Where(c => c.Tipo == tipo).Select(c => c.Codigo).ToListAsync();
+            var siguiente = Enumerable.Range(rango.Item1, rango.Item2 - rango.Item1 + 1)
+                .Select(n => n.ToString())
+                .FirstOrDefault(n => !usados.Contains(n));
+            return Results.Ok(new { codigo = siguiente ?? "" });
+        });
+
         group.MapGet("/", async (AppDbContext db, TipoCatalogo? tipo) =>
         {
             var query = db.Catalogos.AsQueryable();
@@ -28,9 +38,20 @@ public static class CatalogoEndpoints
         group.MapPost("/", async (CreateCatalogoRequest req, AppDbContext db) =>
         {
             var codigoUpper = req.Codigo.ToUpper();
-            // Verificar si ya existe
             if (await db.Catalogos.AnyAsync(c => c.Codigo == codigoUpper && c.Tipo == req.Tipo))
-                return Results.BadRequest($"El código '{codigoUpper}' ya existe para el tipo {req.Tipo}.");
+            {
+                // Sugerir siguiente código libre
+                var rango = req.Tipo == TipoCatalogo.Ingreso ? (1001, 1999) : (2001, 2999);
+                var usados = await db.Catalogos
+                    .Where(c => c.Tipo == req.Tipo)
+                    .Select(c => c.Codigo)
+                    .ToListAsync();
+                var siguiente = Enumerable.Range(rango.Item1, rango.Item2 - rango.Item1 + 1)
+                    .Select(n => n.ToString())
+                    .FirstOrDefault(n => !usados.Contains(n));
+                return Results.BadRequest(
+                    $"El código '{codigoUpper}' ya existe. Siguiente disponible: {siguiente ?? "Sin códigos disponibles"}");
+            }
 
             var catalogo = new Catalogo { Codigo = codigoUpper, Descripcion = req.Descripcion, Tipo = req.Tipo };
             db.Catalogos.Add(catalogo);

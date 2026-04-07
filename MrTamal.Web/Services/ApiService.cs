@@ -23,6 +23,13 @@ public class ApiService(HttpClient http, ILocalStorageService localStorage)
         return await http.GetFromJsonAsync<List<CatalogoDto>>(url);
     }
 
+    public async Task<string?> GetSiguienteCodigoAsync(TipoCatalogo tipo)
+    {
+        await EnsureTokenAsync();
+        var resp = await http.GetFromJsonAsync<SiguienteCodigoDto>($"/api/catalogos/siguiente-codigo/{(int)tipo}");
+        return resp?.Codigo;
+    }
+
     public async Task<CatalogoDto?> CreateCatalogoAsync(CreateCatalogoRequest req)
     { await EnsureTokenAsync(); return await PostAsync<CatalogoDto>("/api/catalogos", req); }
 
@@ -176,4 +183,6 @@ public class ApiService(HttpClient http, ILocalStorageService localStorage)
         public string Moneda { get; set; } = "";
         public string Simbolo { get; set; } = "";
     }
+
+    private class SiguienteCodigoDto { public string Codigo { get; set; } = ""; }
 }

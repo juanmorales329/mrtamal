@@ -68,7 +68,7 @@ else
                     {
                         <div class="mb-3">
                             <label class="form-label">Tipo</label>
-                            <select class="form-select" @bind="formTipo">
+                            <select class="form-select" @bind="formTipo" @bind:after="ActualizarCodigoSugerido">
                                 <option value="1">Ingreso</option>
                                 <option value="2">Egreso</option>
                             </select>
@@ -117,7 +117,7 @@ else
         lista = await Api.GetCatalogosAsync(tipo);
     }
 
-    private void AbrirModal(MrTamal.Shared.DTOs.CatalogoDto? cat)
+    private async Task AbrirModal(MrTamal.Shared.DTOs.CatalogoDto? cat)
     {
         editando = cat ?? new(0, "", "", MrTamal.Shared.Models.TipoCatalogo.Ingreso, true);
         formCodigo = editando.Codigo;
@@ -125,7 +125,21 @@ else
         formTipo = (int)editando.Tipo;
         formActivo = editando.Activo;
         error = null;
+
+        // Si es nuevo, sugerir el siguiente código libre
+        if (editando.Id == 0)
+        {
+            var tipo = (MrTamal.Shared.Models.TipoCatalogo)formTipo;
+            formCodigo = await Api.GetSiguienteCodigoAsync(tipo) ?? "";
+        }
+
         mostrarModal = true;
+    }
+
+    private async Task ActualizarCodigoSugerido()
+    {
+        if (editando?.Id == 0)
+            formCodigo = await Api.GetSiguienteCodigoAsync((MrTamal.Shared.Models.TipoCatalogo)formTipo) ?? "";
     }
 
     private async Task Guardar()
