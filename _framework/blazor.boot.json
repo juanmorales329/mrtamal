@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "MrTamal.Web",
   "resources": {
-    "hash": "sha256-JoLAoOy6T92At0i8aomhsVZJODFteZYCP1vbJhM8KwY=",
+    "hash": "sha256-KBCEC9wc49Ng3j4gEaKKt6xfoIe1W9e9u3uPUTb63kY=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-A16ka545FHaB+QXjyJ4exXh7XpBAAIFnX8YkC4xAng8="
     },
@@ -40,8 +40,8 @@
       "Microsoft.IdentityModel.Tokens.wasm": "sha256-0kmDV3mtzrtsTikFsGop2sZ4961x8oEh+XwritJakms=",
       "Microsoft.JSInterop.WebAssembly.wasm": "sha256-UFB+2RHRiffv/kpP3onPVdxXxmwJA6oo3dI1M+LiZOU=",
       "Microsoft.JSInterop.wasm": "sha256-sI24t40yGVRArMZEJlj3TxpqglnYAZPub6Fj1XLo4qU=",
-      "MrTamal.Shared.wasm": "sha256-CkrfO7Hf0+esJfmdFhQZJwu30YZ9nC5kFlxS0vB3QIA=",
-      "MrTamal.Web.wasm": "sha256-8ElllfMCqVV+8+lEypbq7cqAmuZa8wUUaol0hgPiAoM=",
+      "MrTamal.Shared.wasm": "sha256-UmSHN+U++3Yy1lPjfijGaKnMmxRYwPyvGEunR1Ma0a4=",
+      "MrTamal.Web.wasm": "sha256-0qvbUpy8JYRzdZznInxjpk/WZEY+2flFlH7eHhjDukM=",
       "System.Collections.Concurrent.wasm": "sha256-TGERHUnEeUXj4E9tdmgB3Bx6eSva/RS5JzSoiZxM9SY=",
       "System.Collections.wasm": "sha256-pMFfuKgAV0KlvPpCf7PFO0ECFa2IDOeaXlWZZDnNkR8=",
       "System.ComponentModel.wasm": "sha256-F2qjYBXWxtewpm29FIk7CosIp5viFHegk54GkyQcEQ0=",
