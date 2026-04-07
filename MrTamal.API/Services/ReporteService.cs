@@ -46,12 +46,19 @@ public class ReporteService(AppDbContext db)
     private static (DateTime inicio, DateTime fin) ObtenerRango(ReporteRequest req)
     {
         var hoy = DateTime.UtcNow.Date;
+        // Si vienen fechas explícitas, usarlas siempre
+        if (req.FechaInicio.HasValue && req.FechaFin.HasValue)
+        {
+            var ini = DateTime.SpecifyKind(req.FechaInicio.Value, DateTimeKind.Utc);
+            var fin = DateTime.SpecifyKind(req.FechaFin.Value, DateTimeKind.Utc);
+            return (ini, fin);
+        }
         return req.Tipo switch
         {
             TipoReporte.Diario => (hoy, hoy.AddDays(1).AddTicks(-1)),
             TipoReporte.Semanal => (hoy.AddDays(-(int)hoy.DayOfWeek), hoy.AddDays(7 - (int)hoy.DayOfWeek).AddTicks(-1)),
-            TipoReporte.Mensual => (new DateTime(hoy.Year, hoy.Month, 1), new DateTime(hoy.Year, hoy.Month, 1).AddMonths(1).AddTicks(-1)),
-            _ when req.FechaInicio.HasValue && req.FechaFin.HasValue => (req.FechaInicio.Value, req.FechaFin.Value),
+            TipoReporte.Mensual => (new DateTime(hoy.Year, hoy.Month, 1, 0, 0, 0, DateTimeKind.Utc),
+                                    new DateTime(hoy.Year, hoy.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(1).AddTicks(-1)),
             _ => (hoy.AddMonths(-1), hoy)
         };
     }
