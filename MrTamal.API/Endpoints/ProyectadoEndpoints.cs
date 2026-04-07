@@ -121,13 +121,19 @@ public static class ProyectadoEndpoints
 
         var metaDiaria = diasLaborablesAnio > 0 ? meta.MetaVentas / diasLaborablesAnio : 0;
 
-        // Ventas reales del año - por sucursal si aplica
+        // Ventas reales del año - visibilidad según rol
         var usuario = await db.Usuarios.FindAsync(uid);
+        var esGlobal = (usuario?.Rol == Roles.Admin || usuario?.Rol == Roles.Gerente) && !usuario.SucursalId.HasValue;
+        var sucursalId = usuario?.SucursalId;
+
         IQueryable<Ingreso> queryIngresos = db.Ingresos.Where(i => i.Fecha.Year == anio);
-        if (usuario?.SucursalId.HasValue == true)
-            queryIngresos = queryIngresos.Where(i => i.SucursalId == usuario.SucursalId);
-        else
-            queryIngresos = queryIngresos.Where(i => i.UsuarioId == uid);
+        if (!esGlobal)
+        {
+            if (sucursalId.HasValue)
+                queryIngresos = queryIngresos.Where(i => i.SucursalId == sucursalId);
+            else
+                queryIngresos = queryIngresos.Where(i => i.UsuarioId == uid);
+        }
 
         var ventaReal = await queryIngresos.SumAsync(i => (decimal?)i.Cantidad) ?? 0;
 
@@ -145,10 +151,11 @@ public static class ProyectadoEndpoints
             var ini = DateTime.SpecifyKind(new DateTime(anio, mesInicio, 1), DateTimeKind.Utc);
             var finC = DateTime.SpecifyKind(new DateTime(anio, mesFin, 1).AddMonths(1).AddTicks(-1), DateTimeKind.Utc);
             IQueryable<Ingreso> qC = db.Ingresos.Where(i => i.Fecha >= ini && i.Fecha <= finC);
-            if (usuario?.SucursalId.HasValue == true)
-                qC = qC.Where(i => i.SucursalId == usuario.SucursalId);
-            else
-                qC = qC.Where(i => i.UsuarioId == uid);
+            if (!esGlobal)
+            {
+                if (sucursalId.HasValue) qC = qC.Where(i => i.SucursalId == sucursalId);
+                else qC = qC.Where(i => i.UsuarioId == uid);
+            }
             var ventaC = await qC.SumAsync(i => (decimal?)i.Cantidad) ?? 0;
             var pctC = metaCuatrimestre > 0 ? Math.Round(ventaC / metaCuatrimestre * 100, 1) : 0;
             cuatrimestres.Add(new ResumenCuatrimestre(num, periodo, metaCuatrimestre, ventaC, ventaC - metaCuatrimestre, pctC));
@@ -171,10 +178,11 @@ public static class ProyectadoEndpoints
             var iniMesUtc = DateTime.SpecifyKind(inicioMes, DateTimeKind.Utc);
             var finMesUtc = DateTime.SpecifyKind(finMes.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
             IQueryable<Ingreso> qMes = db.Ingresos.Where(i => i.Fecha >= iniMesUtc && i.Fecha <= finMesUtc);
-            if (usuario?.SucursalId.HasValue == true)
-                qMes = qMes.Where(i => i.SucursalId == usuario.SucursalId);
-            else
-                qMes = qMes.Where(i => i.UsuarioId == uid);
+            if (!esGlobal)
+            {
+                if (sucursalId.HasValue) qMes = qMes.Where(i => i.SucursalId == sucursalId);
+                else qMes = qMes.Where(i => i.UsuarioId == uid);
+            }
             var ventaMes = await qMes.SumAsync(i => (decimal?)i.Cantidad) ?? 0;
 
             desglose.Add(new DesgloseMes(
