@@ -1,140 +1,132 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Blazored.LocalStorage;
 using MrTamal.Shared.DTOs;
 using MrTamal.Shared.Models;
 
 namespace MrTamal.Web.Services;
 
-public class ApiService(HttpClient http)
+public class ApiService(HttpClient http, ILocalStorageService localStorage)
 {
-    // Catalogos
-    public Task<List<CatalogoDto>?> GetCatalogosAsync(TipoCatalogo? tipo = null)
+    private async Task EnsureTokenAsync()
     {
-        var url = tipo.HasValue ? $"/api/catalogos?tipo={(int)tipo}" : "/api/catalogos";
-        return http.GetFromJsonAsync<List<CatalogoDto>>(url);
+        var token = await localStorage.GetItemAsync<string>("authToken");
+        if (!string.IsNullOrEmpty(token))
+            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
 
-    public Task<CatalogoDto?> CreateCatalogoAsync(CreateCatalogoRequest req) =>
-        PostAsync<CatalogoDto>("/api/catalogos", req);
+    // Catalogos
+    public async Task<List<CatalogoDto>?> GetCatalogosAsync(TipoCatalogo? tipo = null)
+    {
+        await EnsureTokenAsync();
+        var url = tipo.HasValue ? $"/api/catalogos?tipo={(int)tipo}" : "/api/catalogos";
+        return await http.GetFromJsonAsync<List<CatalogoDto>>(url);
+    }
 
-    public Task<CatalogoDto?> UpdateCatalogoAsync(int id, UpdateCatalogoRequest req) =>
-        PutAsync<CatalogoDto>($"/api/catalogos/{id}", req);
+    public async Task<CatalogoDto?> CreateCatalogoAsync(CreateCatalogoRequest req)
+    { await EnsureTokenAsync(); return await PostAsync<CatalogoDto>("/api/catalogos", req); }
 
-    public Task<bool> DeleteCatalogoAsync(int id) =>
-        DeleteAsync($"/api/catalogos/{id}");
+    public async Task<CatalogoDto?> UpdateCatalogoAsync(int id, UpdateCatalogoRequest req)
+    { await EnsureTokenAsync(); return await PutAsync<CatalogoDto>($"/api/catalogos/{id}", req); }
+
+    public async Task<bool> DeleteCatalogoAsync(int id)
+    { await EnsureTokenAsync(); return await DeleteAsync($"/api/catalogos/{id}"); }
 
     // Ingresos
-    public Task<List<MovimientoDto>?> GetIngresosAsync(DateTime? desde = null, DateTime? hasta = null)
-    {
-        var url = BuildUrl("/api/ingresos", desde, hasta);
-        return http.GetFromJsonAsync<List<MovimientoDto>>(url);
-    }
+    public async Task<List<MovimientoDto>?> GetIngresosAsync(DateTime? desde = null, DateTime? hasta = null)
+    { await EnsureTokenAsync(); return await http.GetFromJsonAsync<List<MovimientoDto>>(BuildUrl("/api/ingresos", desde, hasta)); }
 
-    public Task<MovimientoDto?> CreateIngresoAsync(CreateMovimientoRequest req) =>
-        PostAsync<MovimientoDto>("/api/ingresos", req);
+    public async Task<MovimientoDto?> CreateIngresoAsync(CreateMovimientoRequest req)
+    { await EnsureTokenAsync(); return await PostAsync<MovimientoDto>("/api/ingresos", req); }
 
-    public Task<MovimientoDto?> UpdateIngresoAsync(int id, UpdateMovimientoRequest req) =>
-        PutAsync<MovimientoDto>($"/api/ingresos/{id}", req);
+    public async Task<MovimientoDto?> UpdateIngresoAsync(int id, UpdateMovimientoRequest req)
+    { await EnsureTokenAsync(); return await PutAsync<MovimientoDto>($"/api/ingresos/{id}", req); }
 
-    public Task<bool> DeleteIngresoAsync(int id) => DeleteAsync($"/api/ingresos/{id}");
+    public async Task<bool> DeleteIngresoAsync(int id)
+    { await EnsureTokenAsync(); return await DeleteAsync($"/api/ingresos/{id}"); }
 
     // Egresos
-    public Task<List<MovimientoDto>?> GetEgresosAsync(DateTime? desde = null, DateTime? hasta = null)
-    {
-        var url = BuildUrl("/api/egresos", desde, hasta);
-        return http.GetFromJsonAsync<List<MovimientoDto>>(url);
-    }
+    public async Task<List<MovimientoDto>?> GetEgresosAsync(DateTime? desde = null, DateTime? hasta = null)
+    { await EnsureTokenAsync(); return await http.GetFromJsonAsync<List<MovimientoDto>>(BuildUrl("/api/egresos", desde, hasta)); }
 
-    public Task<MovimientoDto?> CreateEgresoAsync(CreateMovimientoRequest req) =>
-        PostAsync<MovimientoDto>("/api/egresos", req);
+    public async Task<MovimientoDto?> CreateEgresoAsync(CreateMovimientoRequest req)
+    { await EnsureTokenAsync(); return await PostAsync<MovimientoDto>("/api/egresos", req); }
 
-    public Task<MovimientoDto?> UpdateEgresoAsync(int id, UpdateMovimientoRequest req) =>
-        PutAsync<MovimientoDto>($"/api/egresos/{id}", req);
+    public async Task<MovimientoDto?> UpdateEgresoAsync(int id, UpdateMovimientoRequest req)
+    { await EnsureTokenAsync(); return await PutAsync<MovimientoDto>($"/api/egresos/{id}", req); }
 
-    public Task<bool> DeleteEgresoAsync(int id) => DeleteAsync($"/api/egresos/{id}");
+    public async Task<bool> DeleteEgresoAsync(int id)
+    { await EnsureTokenAsync(); return await DeleteAsync($"/api/egresos/{id}"); }
 
     // Reportes
-    public Task<ReporteResumen?> GetReporteAsync(ReporteRequest req) =>
-        PostAsync<ReporteResumen>("/api/reportes", req);
+    public async Task<ReporteResumen?> GetReporteAsync(ReporteRequest req)
+    { await EnsureTokenAsync(); return await PostAsync<ReporteResumen>("/api/reportes", req); }
 
     public async Task<byte[]?> GetReportePdfAsync(ReporteRequest req)
     {
+        await EnsureTokenAsync();
         var resp = await http.PostAsJsonAsync("/api/reportes/pdf", req);
         return resp.IsSuccessStatusCode ? await resp.Content.ReadAsByteArrayAsync() : null;
     }
 
     // Carga masiva
-    public async Task<dynamic?> CargaMasivaTextoAsync(string tipo, string texto)
+    public async Task<CargaResultado?> CargaMasivaTextoAsync(string tipo, string texto)
     {
+        await EnsureTokenAsync();
         var content = new StringContent(texto, System.Text.Encoding.UTF8, "text/plain");
         var resp = await http.PostAsync($"/api/carga-masiva/{tipo}", content);
-        return resp.IsSuccessStatusCode
-            ? await resp.Content.ReadFromJsonAsync<CargaResultado>()
-            : null;
+        return resp.IsSuccessStatusCode ? await resp.Content.ReadFromJsonAsync<CargaResultado>() : null;
     }
 
     public async Task<CargaResultado?> CargaMasivaExcelAsync(string tipo, Stream stream, string fileName)
     {
+        await EnsureTokenAsync();
         using var content = new MultipartFormDataContent();
         using var sc = new StreamContent(stream);
         sc.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         content.Add(sc, "archivo", fileName);
         var resp = await http.PostAsync($"/api/carga-masiva/{tipo}", content);
-        return resp.IsSuccessStatusCode
-            ? await resp.Content.ReadFromJsonAsync<CargaResultado>()
-            : null;
+        return resp.IsSuccessStatusCode ? await resp.Content.ReadFromJsonAsync<CargaResultado>() : null;
     }
 
     public async Task<byte[]?> DescargarPlantillaAsync(string tipo)
     {
+        await EnsureTokenAsync();
         var resp = await http.GetAsync($"/api/carga-masiva/plantilla/{tipo}");
         return resp.IsSuccessStatusCode ? await resp.Content.ReadAsByteArrayAsync() : null;
     }
 
-    public class CargaResultado
-    {
-        public int Guardados { get; set; }
-        public List<string> Errores { get; set; } = [];
-        public string Mensaje { get; set; } = "";
-    }
-
     // Sucursales
-    public Task<List<SucursalDto>?> GetSucursalesAsync() =>
-        http.GetFromJsonAsync<List<SucursalDto>>("/api/sucursales");
+    public async Task<List<SucursalDto>?> GetSucursalesAsync()
+    { await EnsureTokenAsync(); return await http.GetFromJsonAsync<List<SucursalDto>>("/api/sucursales"); }
 
-    public Task<List<PaisDto>?> GetPaisesAsync() =>
-        http.GetFromJsonAsync<List<PaisDto>>("/api/sucursales/paises");
+    public async Task<List<PaisDto>?> GetPaisesAsync()
+    { await EnsureTokenAsync(); return await http.GetFromJsonAsync<List<PaisDto>>("/api/sucursales/paises"); }
 
-    public async Task<SucursalDto?> CreateSucursalAsync(CreateSucursalRequest req) =>
-        await PostAsync<SucursalDto>("/api/sucursales", req);
+    public async Task<SucursalDto?> CreateSucursalAsync(CreateSucursalRequest req)
+    { await EnsureTokenAsync(); return await PostAsync<SucursalDto>("/api/sucursales", req); }
 
-    public async Task<SucursalDto?> UpdateSucursalAsync(int id, UpdateSucursalRequest req) =>
-        await PutAsync<SucursalDto>($"/api/sucursales/{id}", req);
+    public async Task<SucursalDto?> UpdateSucursalAsync(int id, UpdateSucursalRequest req)
+    { await EnsureTokenAsync(); return await PutAsync<SucursalDto>($"/api/sucursales/{id}", req); }
 
     // Usuarios
-    public Task<List<UsuarioDto>?> GetUsuariosAsync() =>
-        http.GetFromJsonAsync<List<UsuarioDto>>("/api/usuarios");
+    public async Task<List<UsuarioDto>?> GetUsuariosAsync()
+    { await EnsureTokenAsync(); return await http.GetFromJsonAsync<List<UsuarioDto>>("/api/usuarios"); }
 
-    public async Task<UsuarioDto?> CreateUsuarioAsync(CreateUsuarioRequest req) =>
-        await PostAsync<UsuarioDto>("/api/usuarios", req);
+    public async Task<UsuarioDto?> CreateUsuarioAsync(CreateUsuarioRequest req)
+    { await EnsureTokenAsync(); return await PostAsync<UsuarioDto>("/api/usuarios", req); }
 
-    public async Task<UsuarioDto?> UpdateUsuarioAsync(int id, UpdateUsuarioRequest req) =>
-        await PutAsync<UsuarioDto>($"/api/usuarios/{id}", req);
+    public async Task<UsuarioDto?> UpdateUsuarioAsync(int id, UpdateUsuarioRequest req)
+    { await EnsureTokenAsync(); return await PutAsync<UsuarioDto>($"/api/usuarios/{id}", req); }
 
-    public async Task<bool> DeleteUsuarioAsync(int id) =>
-        (await http.DeleteAsync($"/api/usuarios/{id}")).IsSuccessStatusCode;
+    public async Task<bool> DeleteUsuarioAsync(int id)
+    { await EnsureTokenAsync(); return await DeleteAsync($"/api/usuarios/{id}"); }
 
     public async Task<bool> CambiarPasswordAsync(int id, string nuevaPassword)
     {
+        await EnsureTokenAsync();
         var resp = await http.PutAsJsonAsync($"/api/usuarios/{id}/password", new { nuevoPassword = nuevaPassword });
         return resp.IsSuccessStatusCode;
-    }
-
-    public class PaisDto
-    {
-        public string Codigo { get; set; } = "";
-        public string Nombre { get; set; } = "";
-        public string Moneda { get; set; } = "";
-        public string Simbolo { get; set; } = "";
     }
 
     // Helpers
@@ -162,5 +154,20 @@ public class ApiService(HttpClient http)
         if (desde.HasValue) parts.Add($"desde={desde.Value:yyyy-MM-dd}");
         if (hasta.HasValue) parts.Add($"hasta={hasta.Value:yyyy-MM-dd}");
         return parts.Any() ? $"{base_}?{string.Join("&", parts)}" : base_;
+    }
+
+    public class CargaResultado
+    {
+        public int Guardados { get; set; }
+        public List<string> Errores { get; set; } = [];
+        public string Mensaje { get; set; } = "";
+    }
+
+    public class PaisDto
+    {
+        public string Codigo { get; set; } = "";
+        public string Nombre { get; set; } = "";
+        public string Moneda { get; set; } = "";
+        public string Simbolo { get; set; } = "";
     }
 }

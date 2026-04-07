@@ -136,7 +136,8 @@ public static class CargaMasivaEndpoints
                 continue;
             }
 
-            var catalogo = catalogos.FirstOrDefault(c => c.Codigo == fila.Codigo);
+            var catalogo = catalogos.FirstOrDefault(c => c.Codigo == fila.Codigo)
+                        ?? catalogos.FirstOrDefault(c => c.Codigo == fila.Codigo.TrimStart('0'));
             if (catalogo is null)
             {
                 errores.Add($"Fila {fila.Numero}: código '{fila.Codigo}' no existe en catálogos.");
