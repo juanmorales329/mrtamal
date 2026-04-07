@@ -46,17 +46,26 @@ public static class MovimientoEndpoints
             if (catalogo is null) return Results.BadRequest("El tipo seleccionado no existe.");
 
             var uid = GetUserId(user);
-            // Tomar la sucursal ACTUAL del usuario al momento de crear el registro
+            var fechaDia = Utc(req.Fecha.Date);
+
+            // Validar duplicado: mismo catálogo, misma fecha, mismo usuario
+            var duplicado = await db.Ingresos.AnyAsync(i =>
+                i.UsuarioId == uid &&
+                i.CatalogoId == req.CatalogoId &&
+                i.Fecha.Date == fechaDia.Date);
+            if (duplicado)
+                return Results.Conflict($"Ya existe un ingreso de tipo '{catalogo.Descripcion}' para esa fecha.");
+
             var usuario = await db.Usuarios.Include(u => u.Sucursal).FirstAsync(u => u.Id == uid);
 
             var ingreso = new Ingreso
             {
-                Fecha = Utc(req.Fecha),
+                Fecha = fechaDia,
                 CatalogoId = req.CatalogoId,
                 Cantidad = req.Cantidad,
                 Notas = req.Notas,
                 UsuarioId = uid,
-                SucursalId = usuario.SucursalId, // se fija en el momento de creación
+                SucursalId = usuario.SucursalId,
                 CreadoEn = DateTime.UtcNow
             };
             db.Ingresos.Add(ingreso);
@@ -124,16 +133,26 @@ public static class MovimientoEndpoints
             if (catalogo is null) return Results.BadRequest("El tipo seleccionado no existe.");
 
             var uid = GetUserId(user);
+            var fechaDia = Utc(req.Fecha.Date);
+
+            // Validar duplicado: mismo catálogo, misma fecha, mismo usuario
+            var duplicado = await db.Egresos.AnyAsync(e =>
+                e.UsuarioId == uid &&
+                e.CatalogoId == req.CatalogoId &&
+                e.Fecha.Date == fechaDia.Date);
+            if (duplicado)
+                return Results.Conflict($"Ya existe un egreso de tipo '{catalogo.Descripcion}' para esa fecha.");
+
             var usuario = await db.Usuarios.Include(u => u.Sucursal).FirstAsync(u => u.Id == uid);
 
             var egreso = new Egreso
             {
-                Fecha = Utc(req.Fecha),
+                Fecha = fechaDia,
                 CatalogoId = req.CatalogoId,
                 Cantidad = req.Cantidad,
                 Notas = req.Notas,
                 UsuarioId = uid,
-                SucursalId = usuario.SucursalId, // se fija en el momento de creación
+                SucursalId = usuario.SucursalId,
                 CreadoEn = DateTime.UtcNow
             };
             db.Egresos.Add(egreso);

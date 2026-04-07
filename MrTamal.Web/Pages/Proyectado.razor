@@ -76,6 +76,42 @@
         </div>
     </div>
 
+    <!-- Cuatrimestres fijos: 100k cada uno -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header fw-bold text-white" style="background:#FF6D00">🎯 Control por Cuatrimestre (Meta: @simbolo 100,000 c/u)</div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-secondary">
+                    <tr><th>Cuatrimestre</th><th>Período</th><th>Meta</th><th>Real</th><th>Diferencia</th><th>Avance</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in resumen.Cuatrimestres)
+                    {
+                        var color = c.PorcentajeCumplimiento >= 100 ? "#4CAF50" : c.PorcentajeCumplimiento >= 70 ? "#FF9800" : "#F44336";
+                        var pct = Math.Min((double)c.PorcentajeCumplimiento, 100);
+                        <tr>
+                            <td class="fw-bold">@c.Numero°</td>
+                            <td>@c.Periodo</td>
+                            <td>@simbolo @c.Meta.ToString("N2")</td>
+                            <td class="text-success fw-bold">@simbolo @c.VentaReal.ToString("N2")</td>
+                            <td class="@(c.Diferencia >= 0 ? "text-success" : "text-danger") fw-bold">
+                                @(c.Diferencia >= 0 ? "+" : "")@simbolo @c.Diferencia.ToString("N2")
+                            </td>
+                            <td style="min-width:140px">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height:10px">
+                                        <div class="progress-bar" style="width:@pct%;background:@color"></div>
+                                    </div>
+                                    <small class="fw-bold" style="color:@color;white-space:nowrap">@c.PorcentajeCumplimiento%</small>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Tabla de metas por período -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header fw-bold bg-dark text-white">📊 Metas por Período</div>

@@ -121,10 +121,38 @@ public static class ProyectadoEndpoints
 
         var metaDiaria = diasLaborablesAnio > 0 ? meta.MetaVentas / diasLaborablesAnio : 0;
 
-        // Ventas reales del año
-        var ventaReal = await db.Ingresos
-            .Where(i => i.UsuarioId == uid && i.Fecha.Year == anio)
-            .SumAsync(i => (decimal?)i.Cantidad) ?? 0;
+        // Ventas reales del año - por sucursal si aplica
+        var usuario = await db.Usuarios.FindAsync(uid);
+        IQueryable<Ingreso> queryIngresos = db.Ingresos.Where(i => i.Fecha.Year == anio);
+        if (usuario?.SucursalId.HasValue == true)
+            queryIngresos = queryIngresos.Where(i => i.SucursalId == usuario.SucursalId);
+        else
+            queryIngresos = queryIngresos.Where(i => i.UsuarioId == uid);
+
+        var ventaReal = await queryIngresos.SumAsync(i => (decimal?)i.Cantidad) ?? 0;
+
+        // Cuatrimestres fijos: 100k cada uno
+        const decimal metaCuatrimestre = 100_000m;
+        var cuatrimestres = new List<ResumenCuatrimestre>();
+        var definiciones = new[]
+        {
+            (1, "Ene - Abr", 1, 4),
+            (2, "May - Ago", 5, 8),
+            (3, "Sep - Dic", 9, 12)
+        };
+        foreach (var (num, periodo, mesInicio, mesFin) in definiciones)
+        {
+            var ini = DateTime.SpecifyKind(new DateTime(anio, mesInicio, 1), DateTimeKind.Utc);
+            var finC = DateTime.SpecifyKind(new DateTime(anio, mesFin, 1).AddMonths(1).AddTicks(-1), DateTimeKind.Utc);
+            IQueryable<Ingreso> qC = db.Ingresos.Where(i => i.Fecha >= ini && i.Fecha <= finC);
+            if (usuario?.SucursalId.HasValue == true)
+                qC = qC.Where(i => i.SucursalId == usuario.SucursalId);
+            else
+                qC = qC.Where(i => i.UsuarioId == uid);
+            var ventaC = await qC.SumAsync(i => (decimal?)i.Cantidad) ?? 0;
+            var pctC = metaCuatrimestre > 0 ? Math.Round(ventaC / metaCuatrimestre * 100, 1) : 0;
+            cuatrimestres.Add(new ResumenCuatrimestre(num, periodo, metaCuatrimestre, ventaC, ventaC - metaCuatrimestre, pctC));
+        }
 
         // Desglose mensual
         var desglose = new List<DesgloseMes>();
@@ -140,9 +168,14 @@ public static class ProyectadoEndpoints
                 diasLabMes++;
             }
             var metaMes = metaDiaria * diasLabMes;
-            var ventaMes = await db.Ingresos
-                .Where(i => i.UsuarioId == uid && i.Fecha.Year == anio && i.Fecha.Month == mes)
-                .SumAsync(i => (decimal?)i.Cantidad) ?? 0;
+            var iniMesUtc = DateTime.SpecifyKind(inicioMes, DateTimeKind.Utc);
+            var finMesUtc = DateTime.SpecifyKind(finMes.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+            IQueryable<Ingreso> qMes = db.Ingresos.Where(i => i.Fecha >= iniMesUtc && i.Fecha <= finMesUtc);
+            if (usuario?.SucursalId.HasValue == true)
+                qMes = qMes.Where(i => i.SucursalId == usuario.SucursalId);
+            else
+                qMes = qMes.Where(i => i.UsuarioId == uid);
+            var ventaMes = await qMes.SumAsync(i => (decimal?)i.Cantidad) ?? 0;
 
             desglose.Add(new DesgloseMes(
                 mes, inicioMes.ToString("MMMM"),
@@ -164,7 +197,8 @@ public static class ProyectadoEndpoints
             Math.Round(metaDiaria * (diasLaborablesAnio / 3m), 2),
             Math.Round(metaDiaria * (diasLaborablesAnio / 2m), 2),
             desglose,
-            diasNoLab.Select(d => new DiaNolaboralDto(d.Id, d.Fecha, d.Descripcion)).ToList()
+            diasNoLab.Select(d => new DiaNolaboralDto(d.Id, d.Fecha, d.Descripcion)).ToList(),
+            cuatrimestres
         );
     }
 

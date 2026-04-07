@@ -47,33 +47,48 @@ else
     <div class="table-responsive">
         <table class="table table-hover">
             <thead class="table-danger">
-                <tr><th>Fecha</th><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Notas</th><th></th></tr>
+                <tr><th>Fecha</th><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Total del día</th><th>Notas</th><th></th></tr>
             </thead>
             <tbody>
-                @foreach (var e in lista)
-                {
-                    <tr>
-                        <td>@e.Fecha.ToString("dd/MM/yyyy")</td>
-                        <td><span class="badge bg-secondary">@e.CodigoCatalogo</span></td>
-                        <td>@e.DescripcionCatalogo</td>
-                        <td class="text-danger fw-bold">@simbolo @e.Cantidad.ToString("N2")</td>
-                        <td class="text-muted small">@e.Notas</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AbrirModal(e)">✏</button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(e.Id)">🗑</button>
-                        </td>
-                    </tr>
+                @{
+                    var grupos = lista.GroupBy(e => e.Fecha.Date).OrderByDescending(g => g.Key);
+                    foreach (var grupo in grupos)
+                    {
+                        var totalDia = grupo.Sum(e => e.Cantidad);
+                        var esPrimero = true;
+                        foreach (var e in grupo.OrderByDescending(x => x.Id))
+                        {
+                            <tr>
+                                <td>@e.Fecha.ToString("dd/MM/yyyy")</td>
+                                <td><span class="badge bg-secondary">@e.CodigoCatalogo</span></td>
+                                <td>@e.DescripcionCatalogo</td>
+                                <td class="text-danger fw-bold">@simbolo @e.Cantidad.ToString("N2")</td>
+                                @if (esPrimero)
+                                {
+                                    <td rowspan="@grupo.Count()" class="align-middle text-center fw-bold text-danger bg-danger bg-opacity-10">
+                                        @simbolo @totalDia.ToString("N2")
+                                    </td>
+                                    esPrimero = false;
+                                }
+                                <td class="text-muted small">@e.Notas</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AbrirModal(e)">✏</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(e.Id)">🗑</button>
+                                </td>
+                            </tr>
+                        }
+                    }
                 }
                 @if (!lista.Any())
                 {
-                    <tr><td colspan="6" class="text-center text-muted py-4">Sin egresos en este mes</td></tr>
+                    <tr><td colspan="7" class="text-center text-muted py-4">Sin egresos en este mes</td></tr>
                 }
             </tbody>
             <tfoot>
                 <tr class="table-danger">
                     <td colspan="3"><strong>Total @mesAnioTexto</strong></td>
                     <td><strong>@simbolo @lista.Sum(e => e.Cantidad).ToString("N2")</strong></td>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                 </tr>
             </tfoot>
         </table>
@@ -83,14 +98,14 @@ else
 @if (mostrarModal)
 {
     <MovimientoModal Titulo="@(editandoId > 0 ? "Editar Egreso" : "Nuevo Egreso")"
-                     Catalogos="catalogos"
+                     Catalogos="catalogosDisponibles"
                      Fecha="@formFecha"
                      CatalogoId="@formCatalogoId"
                      Cantidad="@formCantidad"
                      Notas="@formNotas"
                      OnGuardar="Guardar"
                      OnCancelar="() => mostrarModal = false"
-                     FechaChanged="v => formFecha = v"
+                     FechaChanged="OnFormFechaChanged"
                      CatalogoIdChanged="v => formCatalogoId = v"
                      CantidadChanged="v => formCantidad = v"
                      NotasChanged="v => formNotas = v" />
@@ -99,6 +114,7 @@ else
 @code {
     private List<MovimientoDto>? lista;
     private List<CatalogoDto>? catalogos;
+    private List<CatalogoDto>? catalogosDisponibles;
     private int mesActual = DateTime.Now.Month;
     private int anioActual = DateTime.Now.Year;
     private bool mostrarModal;
@@ -154,6 +170,28 @@ else
         formCantidad = m?.Cantidad ?? 0;
         formNotas = m?.Notas;
         mostrarModal = true;
+        ActualizarCatalogosDisponibles();
+    }
+
+    private void ActualizarCatalogosDisponibles()
+    {
+        if (editandoId > 0 || lista is null || catalogos is null)
+        {
+            catalogosDisponibles = catalogos;
+            return;
+        }
+        var usadosEnFecha = lista
+            .Where(e => e.Fecha.Date == formFecha.Date)
+            .Select(e => e.CodigoCatalogo)
+            .ToHashSet();
+        catalogosDisponibles = catalogos.Where(c => !usadosEnFecha.Contains(c.Codigo)).ToList();
+        formCatalogoId = catalogosDisponibles?.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private void OnFormFechaChanged(DateTime fecha)
+    {
+        formFecha = fecha;
+        ActualizarCatalogosDisponibles();
     }
 
     private async Task Guardar()

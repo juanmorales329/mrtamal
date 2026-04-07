@@ -27,7 +27,18 @@ public record ResumenProyectado(
     // Desglose mensual
     List<DesgloseMes> DesgloseMensual,
     // Días no laborables
-    List<DiaNolaboralDto> DiasNoLaborables
+    List<DiaNolaboralDto> DiasNoLaborables,
+    // Cuatrimestres fijos (100k cada uno)
+    List<ResumenCuatrimestre> Cuatrimestres
+);
+
+public record ResumenCuatrimestre(
+    int Numero,
+    string Periodo,
+    decimal Meta,
+    decimal VentaReal,
+    decimal Diferencia,
+    decimal PorcentajeCumplimiento
 );
 
 public record DesgloseMes(

@@ -16,16 +16,25 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Tipo</label>
-                    <select class="form-select" value="@CatalogoId"
-                            @onchange="e => CatalogoIdChanged.InvokeAsync(int.Parse(e.Value!.ToString()!))">
-                        @if (Catalogos is not null)
-                        {
-                            @foreach (var c in Catalogos.Where(c => c.Activo))
+                    @if (Catalogos is not null && !Catalogos.Any(c => c.Activo))
+                    {
+                        <div class="alert alert-warning py-2 mb-0">
+                            ⚠️ Ya registraste todos los tipos disponibles para esta fecha.
+                        </div>
+                    }
+                    else
+                    {
+                        <select class="form-select" value="@CatalogoId"
+                                @onchange="e => CatalogoIdChanged.InvokeAsync(int.Parse(e.Value!.ToString()!))">
+                            @if (Catalogos is not null)
                             {
-                                <option value="@c.Id">[@c.Codigo] @c.Descripcion</option>
+                                @foreach (var c in Catalogos.Where(c => c.Activo))
+                                {
+                                    <option value="@c.Id">[@c.Codigo] @c.Descripcion</option>
+                                }
                             }
-                        }
-                    </select>
+                        </select>
+                    }
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Cantidad</label>
@@ -48,8 +57,10 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" @onclick="OnCancelar">Cancelar</button>
-                <button class="btn btn-primary" @onclick="OnGuardar"
-                        disabled="@(!string.IsNullOrEmpty(errorCantidad))">Guardar</button>
+                <button class="btn btn-primary" @onclick="HandleGuardar"
+                        disabled="@(guardando || !string.IsNullOrEmpty(errorCantidad) || SinTiposDisponibles)">
+                    @(guardando ? "⏳ Guardando..." : "Guardar")
+                </button>
             </div>
         </div>
     </div>
@@ -71,6 +82,17 @@
 
     private string cantidadTexto = "";
     private string errorCantidad = "";
+    private bool guardando = false;
+
+    private bool SinTiposDisponibles => Catalogos is not null && !Catalogos.Any(c => c.Activo);
+
+    private async Task HandleGuardar()
+    {
+        if (guardando) return;
+        guardando = true;
+        await OnGuardar.InvokeAsync();
+        guardando = false;
+    }
 
     protected override void OnParametersSet()
     {

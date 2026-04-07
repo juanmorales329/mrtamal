@@ -10,21 +10,34 @@ public class ReporteService(AppDbContext db)
     {
         var (inicio, fin) = ObtenerRango(req);
 
-        // PostgreSQL necesita UTC
         var inicioUtc = DateTime.SpecifyKind(inicio, DateTimeKind.Utc);
         var finUtc = DateTime.SpecifyKind(fin, DateTimeKind.Utc);
 
-        var ingresos = await db.Ingresos
-            .Include(i => i.Catalogo)
-            .Where(i => i.UsuarioId == usuarioId && i.Fecha >= inicioUtc && i.Fecha <= finUtc)
-            .OrderBy(i => i.Fecha)
+        // Si el usuario pertenece a una sucursal, mostrar datos de toda la sucursal
+        var usuario = await db.Usuarios.FindAsync(usuarioId);
+        var sucursalId = usuario?.SucursalId;
+
+        IQueryable<Ingreso> qIng = db.Ingresos.Include(i => i.Catalogo)
+            .Where(i => i.Fecha >= inicioUtc && i.Fecha <= finUtc);
+        IQueryable<Egreso> qEgr = db.Egresos.Include(e => e.Catalogo)
+            .Where(e => e.Fecha >= inicioUtc && e.Fecha <= finUtc);
+
+        if (sucursalId.HasValue)
+        {
+            qIng = qIng.Where(i => i.SucursalId == sucursalId);
+            qEgr = qEgr.Where(e => e.SucursalId == sucursalId);
+        }
+        else
+        {
+            qIng = qIng.Where(i => i.UsuarioId == usuarioId);
+            qEgr = qEgr.Where(e => e.UsuarioId == usuarioId);
+        }
+
+        var ingresos = await qIng.OrderBy(i => i.Fecha)
             .Select(i => new ReporteDetalle(i.Fecha, i.Catalogo!.Codigo, i.Catalogo.Descripcion, i.Cantidad, i.Notas))
             .ToListAsync();
 
-        var egresos = await db.Egresos
-            .Include(e => e.Catalogo)
-            .Where(e => e.UsuarioId == usuarioId && e.Fecha >= inicioUtc && e.Fecha <= finUtc)
-            .OrderBy(e => e.Fecha)
+        var egresos = await qEgr.OrderBy(e => e.Fecha)
             .Select(e => new ReporteDetalle(e.Fecha, e.Catalogo!.Codigo, e.Catalogo.Descripcion, e.Cantidad, e.Notas))
             .ToListAsync();
 
@@ -65,13 +78,19 @@ public class ReporteService(AppDbContext db)
 
     private async Task<List<ReporteComparacion>> ComparacionAnualAsync(int usuarioId, int anio1, int anio2)
     {
+        var usuario = await db.Usuarios.FindAsync(usuarioId);
+        var sucursalId = usuario?.SucursalId;
         var result = new List<ReporteComparacion>();
         foreach (var anio in new[] { anio1, anio2 })
         {
             var ini = DateTime.SpecifyKind(new DateTime(anio, 1, 1), DateTimeKind.Utc);
             var fin = DateTime.SpecifyKind(new DateTime(anio, 12, 31, 23, 59, 59), DateTimeKind.Utc);
-            var ti = await db.Ingresos.Where(i => i.UsuarioId == usuarioId && i.Fecha >= ini && i.Fecha <= fin).SumAsync(i => (decimal?)i.Cantidad) ?? 0;
-            var te = await db.Egresos.Where(e => e.UsuarioId == usuarioId && e.Fecha >= ini && e.Fecha <= fin).SumAsync(e => (decimal?)e.Cantidad) ?? 0;
+            IQueryable<Ingreso> qI = db.Ingresos.Where(i => i.Fecha >= ini && i.Fecha <= fin);
+            IQueryable<Egreso> qE = db.Egresos.Where(e => e.Fecha >= ini && e.Fecha <= fin);
+            if (sucursalId.HasValue) { qI = qI.Where(i => i.SucursalId == sucursalId); qE = qE.Where(e => e.SucursalId == sucursalId); }
+            else { qI = qI.Where(i => i.UsuarioId == usuarioId); qE = qE.Where(e => e.UsuarioId == usuarioId); }
+            var ti = await qI.SumAsync(i => (decimal?)i.Cantidad) ?? 0;
+            var te = await qE.SumAsync(e => (decimal?)e.Cantidad) ?? 0;
             result.Add(new ReporteComparacion(anio.ToString(), ti, te, ti - te));
         }
         return result;
@@ -79,13 +98,19 @@ public class ReporteService(AppDbContext db)
 
     private async Task<List<ReporteComparacion>> ComparacionMensualAsync(int usuarioId, int anio)
     {
+        var usuario = await db.Usuarios.FindAsync(usuarioId);
+        var sucursalId = usuario?.SucursalId;
         var result = new List<ReporteComparacion>();
         for (int mes = 1; mes <= 12; mes++)
         {
             var ini = DateTime.SpecifyKind(new DateTime(anio, mes, 1), DateTimeKind.Utc);
             var fin = DateTime.SpecifyKind(ini.AddMonths(1).AddTicks(-1), DateTimeKind.Utc);
-            var ti = await db.Ingresos.Where(i => i.UsuarioId == usuarioId && i.Fecha >= ini && i.Fecha <= fin).SumAsync(i => (decimal?)i.Cantidad) ?? 0;
-            var te = await db.Egresos.Where(e => e.UsuarioId == usuarioId && e.Fecha >= ini && e.Fecha <= fin).SumAsync(e => (decimal?)e.Cantidad) ?? 0;
+            IQueryable<Ingreso> qI = db.Ingresos.Where(i => i.Fecha >= ini && i.Fecha <= fin);
+            IQueryable<Egreso> qE = db.Egresos.Where(e => e.Fecha >= ini && e.Fecha <= fin);
+            if (sucursalId.HasValue) { qI = qI.Where(i => i.SucursalId == sucursalId); qE = qE.Where(e => e.SucursalId == sucursalId); }
+            else { qI = qI.Where(i => i.UsuarioId == usuarioId); qE = qE.Where(e => e.UsuarioId == usuarioId); }
+            var ti = await qI.SumAsync(i => (decimal?)i.Cantidad) ?? 0;
+            var te = await qE.SumAsync(e => (decimal?)e.Cantidad) ?? 0;
             result.Add(new ReporteComparacion($"{ini:MMMM}", ti, te, ti - te));
         }
         return result;
