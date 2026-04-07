@@ -3,6 +3,7 @@
 @inject HttpClient Http
 @inject AuthService AuthSvc
 @inject IJSRuntime JS
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
 
 <PageTitle>Proyectado de Ventas</PageTitle>
 
@@ -221,6 +222,11 @@ else if (sinMeta)
     protected override async Task OnInitializedAsync()
     {
         simbolo = await AuthSvc.GetSimboloMonedaAsync();
+        // Asegurar que el token esté en el header
+        var token = await localStorage.GetItemAsync<string>("authToken");
+        if (!string.IsNullOrEmpty(token))
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
         await Cargar();
     }
 
