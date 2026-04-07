@@ -16,17 +16,15 @@ public static class ProyectadoEndpoints
         group.MapGet("/{anio:int}", async (int anio, AppDbContext db, ClaimsPrincipal user) =>
         {
             var uid = GetUserId(user);
-            var usuario = await db.Usuarios.FindAsync(uid);
 
+            // Buscar meta sin filtro de sucursal - cualquier meta del año
             var meta = await db.MetasAnuales
-                .FirstOrDefaultAsync(m => m.Anio == anio &&
-                    (usuario!.SucursalId == null || m.SucursalId == usuario.SucursalId));
+                .FirstOrDefaultAsync(m => m.Anio == anio);
 
             if (meta is null) return Results.NotFound(new { mensaje = "No hay meta configurada para este año." });
 
             var diasNoLab = await db.DiasNoLaborables
-                .Where(d => d.Fecha.Year == anio &&
-                    (usuario!.SucursalId == null || d.SucursalId == usuario.SucursalId))
+                .Where(d => d.Fecha.Year == anio)
                 .ToListAsync();
 
             var resumen = CalcularResumen(meta, diasNoLab, db, uid, anio);
