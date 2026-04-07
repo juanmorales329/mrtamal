@@ -78,7 +78,7 @@
     private async Task Logout()
     {
         await AuthSvc.LogoutAsync();
-        Nav.NavigateTo("/login");
+        Nav.NavigateTo("login");
     }
 
     private string GetRol(System.Security.Claims.ClaimsPrincipal user) =>

@@ -89,7 +89,7 @@
         var result = await AuthSvc.LoginAsync(new(username, password));
         loading = false;
         if (result is null) error = "Usuario o contraseña incorrectos.";
-        else Nav.NavigateTo("/");
+        else Nav.NavigateTo("");
     }
 
     private async Task HandleSetup()
@@ -100,7 +100,7 @@
         var result = await AuthSvc.SetupAsync(nombre, username, email, password);
         loading = false;
         if (result is null) error = "Error al configurar. Intenta de nuevo.";
-        else Nav.NavigateTo("/");
+        else Nav.NavigateTo("");
     }
 
     private class NeedsSetupResponse { public bool NeedsSetup { get; set; } }
