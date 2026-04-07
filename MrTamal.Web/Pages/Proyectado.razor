@@ -233,7 +233,7 @@ else if (sinMeta)
     private async Task Cargar()
     {
         sinMeta = false; resumen = null;
-        var resp = await Http.GetAsync($"/api/proyectado/{anioSeleccionado}");
+        var resp = await Http.GetAsync($"https://mrtamal.onrender.com/api/proyectado/{anioSeleccionado}");
         if (resp.IsSuccessStatusCode)
         {
             resumen = await resp.Content.ReadFromJsonAsync<ResumenProyectado>();
@@ -249,14 +249,14 @@ else if (sinMeta)
 
     private async Task GuardarMeta()
     {
-        await Http.PostAsJsonAsync("/api/proyectado/metas",
+        await Http.PostAsJsonAsync("https://mrtamal.onrender.com/api/proyectado/metas",
             new { anio = anioSeleccionado, metaVentas = formMeta, excluirDomingos = formExcluirDomingos, sucursalId = (int?)null });
         await Cargar();
     }
 
     private async Task AgregarDia()
     {
-        await Http.PostAsJsonAsync("/api/proyectado/dias-nolaborables",
+        await Http.PostAsJsonAsync("https://mrtamal.onrender.com/api/proyectado/dias-nolaborables",
             new { fecha = formFechaDia, descripcion = formDescDia, sucursalId = (int?)null });
         mostrarAgregarDia = false;
         await Cargar();
@@ -264,7 +264,7 @@ else if (sinMeta)
 
     private async Task EliminarDia(int id)
     {
-        await Http.DeleteAsync($"/api/proyectado/dias-nolaborables/{id}");
+        await Http.DeleteAsync($"https://mrtamal.onrender.com/api/proyectado/dias-nolaborables/{id}");
         await Cargar();
     }
 
