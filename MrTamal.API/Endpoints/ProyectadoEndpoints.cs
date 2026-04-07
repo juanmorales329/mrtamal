@@ -42,11 +42,12 @@ public static class ProyectadoEndpoints
             return Results.Ok(lista.Select(m => new MetaAnualDto(m.Id, m.Anio, m.MetaVentas, m.ExcluirDomingos, m.SucursalId, m.Sucursal?.Nombre)));
         });
 
-        // Crear/actualizar meta
+        // Crear/actualizar meta (upsert)
         group.MapPost("/metas", async (CreateMetaAnualRequest req, AppDbContext db, ClaimsPrincipal user) =>
         {
             var uid = GetUserId(user);
-            var existente = await db.MetasAnuales.FirstOrDefaultAsync(m => m.Anio == req.Anio && m.SucursalId == req.SucursalId);
+            var existente = await db.MetasAnuales
+                .FirstOrDefaultAsync(m => m.Anio == req.Anio);
             if (existente is not null)
             {
                 existente.MetaVentas = req.MetaVentas;

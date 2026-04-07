@@ -271,9 +271,13 @@ else if (sinMeta)
     private async Task RenderGrafica()
     {
         if (resumen is null) return;
-        var labels = resumen.DesgloseMensual.Select(m => m.NombreMes[..3]).ToArray();
-        var metas = resumen.DesgloseMensual.Select(m => (double)m.MetaMes).ToArray();
-        var reales = resumen.DesgloseMensual.Select(m => (double)m.VentaReal).ToArray();
-        await JS.InvokeVoidAsync("renderProyChart", "proyChart", labels, metas, reales);
+        try
+        {
+            var labels = resumen.DesgloseMensual.Select(m => m.NombreMes[..3]).ToArray();
+            var metas = resumen.DesgloseMensual.Select(m => (double)m.MetaMes).ToArray();
+            var reales = resumen.DesgloseMensual.Select(m => (double)m.VentaReal).ToArray();
+            await JS.InvokeVoidAsync("renderProyChart", "proyChart", labels, metas, reales);
+        }
+        catch { /* Chart.js puede no estar listo aún */ }
     }
 }
