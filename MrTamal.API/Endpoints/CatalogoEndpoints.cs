@@ -27,17 +27,34 @@ public static class CatalogoEndpoints
 
         group.MapPost("/", async (CreateCatalogoRequest req, AppDbContext db) =>
         {
-            var catalogo = new Catalogo { Codigo = req.Codigo.ToUpper(), Descripcion = req.Descripcion, Tipo = req.Tipo };
+            var codigoUpper = req.Codigo.ToUpper();
+            // Verificar si ya existe
+            if (await db.Catalogos.AnyAsync(c => c.Codigo == codigoUpper && c.Tipo == req.Tipo))
+                return Results.BadRequest($"El código '{codigoUpper}' ya existe para el tipo {req.Tipo}.");
+
+            var catalogo = new Catalogo { Codigo = codigoUpper, Descripcion = req.Descripcion, Tipo = req.Tipo };
             db.Catalogos.Add(catalogo);
-            await db.SaveChangesAsync();
-            return Results.Created($"/api/catalogos/{catalogo.Id}", new CatalogoDto(catalogo.Id, catalogo.Codigo, catalogo.Descripcion, catalogo.Tipo, catalogo.Activo));
+            try
+            {
+                await db.SaveChangesAsync();
+                return Results.Created($"/api/catalogos/{catalogo.Id}",
+                    new CatalogoDto(catalogo.Id, catalogo.Codigo, catalogo.Descripcion, catalogo.Tipo, catalogo.Activo));
+            }
+            catch (DbUpdateException)
+            {
+                return Results.BadRequest($"El código '{codigoUpper}' ya existe.");
+            }
         });
 
         group.MapPut("/{id:int}", async (int id, UpdateCatalogoRequest req, AppDbContext db) =>
         {
             var catalogo = await db.Catalogos.FindAsync(id);
             if (catalogo is null) return Results.NotFound();
-            catalogo.Codigo = req.Codigo.ToUpper();
+            var codigoUpper = req.Codigo.ToUpper();
+            // Verificar duplicado en edición
+            if (await db.Catalogos.AnyAsync(c => c.Codigo == codigoUpper && c.Tipo == catalogo.Tipo && c.Id != id))
+                return Results.BadRequest($"El código '{codigoUpper}' ya existe.");
+            catalogo.Codigo = codigoUpper;
             catalogo.Descripcion = req.Descripcion;
             catalogo.Activo = req.Activo;
             await db.SaveChangesAsync();

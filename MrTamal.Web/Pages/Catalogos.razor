@@ -136,12 +136,24 @@ else
             error = "Código y descripción son requeridos."; return;
         }
 
-        if (editando?.Id == 0)
-            await Api.CreateCatalogoAsync(new(formCodigo, formDescripcion, (MrTamal.Shared.Models.TipoCatalogo)formTipo));
-        else
-            await Api.UpdateCatalogoAsync(editando!.Id, new(formCodigo, formDescripcion, formActivo));
-
-        mostrarModal = false;
-        await Cargar();
+        try
+        {
+            if (editando?.Id == 0)
+            {
+                var result = await Api.CreateCatalogoAsync(new(formCodigo, formDescripcion, (MrTamal.Shared.Models.TipoCatalogo)formTipo));
+                if (result is null) { error = "Error al guardar."; return; }
+            }
+            else
+            {
+                var result = await Api.UpdateCatalogoAsync(editando!.Id, new(formCodigo, formDescripcion, formActivo));
+                if (result is null) { error = "Error al actualizar."; return; }
+            }
+            mostrarModal = false;
+            await Cargar();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message.Contains("ya existe") ? ex.Message : "Error de conexión con el servidor.";
+        }
     }
 }

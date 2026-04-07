@@ -133,13 +133,19 @@ public class ApiService(HttpClient http, ILocalStorageService localStorage)
     private async Task<T?> PostAsync<T>(string url, object body)
     {
         var resp = await http.PostAsJsonAsync(url, body);
-        return resp.IsSuccessStatusCode ? await resp.Content.ReadFromJsonAsync<T>() : default;
+        if (resp.IsSuccessStatusCode) return await resp.Content.ReadFromJsonAsync<T>();
+        if (resp.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            throw new Exception((await resp.Content.ReadAsStringAsync()).Trim('"'));
+        return default;
     }
 
     private async Task<T?> PutAsync<T>(string url, object body)
     {
         var resp = await http.PutAsJsonAsync(url, body);
-        return resp.IsSuccessStatusCode ? await resp.Content.ReadFromJsonAsync<T>() : default;
+        if (resp.IsSuccessStatusCode) return await resp.Content.ReadFromJsonAsync<T>();
+        if (resp.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            throw new Exception((await resp.Content.ReadAsStringAsync()).Trim('"'));
+        return default;
     }
 
     private async Task<bool> DeleteAsync(string url)

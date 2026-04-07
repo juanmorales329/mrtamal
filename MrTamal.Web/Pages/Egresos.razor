@@ -106,12 +106,16 @@ else
 
     private async Task Guardar()
     {
-        if (editandoId > 0)
-            await Api.UpdateEgresoAsync(editandoId, new(formFecha, formCatalogoId, formCantidad, formNotas));
-        else
-            await Api.CreateEgresoAsync(new(formFecha, formCatalogoId, formCantidad, formNotas));
-        mostrarModal = false;
-        await Cargar();
+        try
+        {
+            if (editandoId > 0)
+                await Api.UpdateEgresoAsync(editandoId, new(formFecha, formCatalogoId, formCantidad, formNotas));
+            else
+                await Api.CreateEgresoAsync(new(formFecha, formCatalogoId, formCantidad, formNotas));
+            mostrarModal = false;
+            await Cargar();
+        }
+        catch { }
     }
 
     private async Task Eliminar(int id)

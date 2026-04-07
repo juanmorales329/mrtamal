@@ -106,12 +106,19 @@ else
 
     private async Task Guardar()
     {
-        if (editandoId > 0)
-            await Api.UpdateIngresoAsync(editandoId, new(formFecha, formCatalogoId, formCantidad, formNotas));
-        else
-            await Api.CreateIngresoAsync(new(formFecha, formCatalogoId, formCantidad, formNotas));
-        mostrarModal = false;
-        await Cargar();
+        try
+        {
+            if (editandoId > 0)
+                await Api.UpdateIngresoAsync(editandoId, new(formFecha, formCatalogoId, formCantidad, formNotas));
+            else
+                await Api.CreateIngresoAsync(new(formFecha, formCatalogoId, formCantidad, formNotas));
+            mostrarModal = false;
+            await Cargar();
+        }
+        catch
+        {
+            // El modal mostrará el error si el servidor falla
+        }
     }
 
     private async Task Eliminar(int id)
