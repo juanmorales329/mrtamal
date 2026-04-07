@@ -76,11 +76,9 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger siempre activo para verificar endpoints
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // Servir archivos estáticos (imágenes del menú)
 var wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
