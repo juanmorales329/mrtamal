@@ -158,8 +158,8 @@ public class ApiService(HttpClient http, ILocalStorageService localStorage)
     public async Task<bool> AsignarSucursalAsync(int usuarioId, int sucursalId)
     {
         await EnsureTokenAsync();
-        var resp = await http.PostAsJsonAsync($"/api/usuarios/{usuarioId}/trasladar",
-            new { sucursalId = (int?)sucursalId, motivo = "Selección al iniciar sesión" });
+        var resp = await http.PostAsJsonAsync($"/api/usuarios/{usuarioId}/asignar-sucursal",
+            new { sucursalId });
         return resp.IsSuccessStatusCode;
     }
 

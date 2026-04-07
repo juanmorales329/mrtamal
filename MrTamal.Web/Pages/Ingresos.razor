@@ -103,6 +103,8 @@ else
                      CatalogoId="@formCatalogoId"
                      Cantidad="@formCantidad"
                      Notas="@formNotas"
+                     Simbolo="@simbolo"
+                     TotalAcumuladoDia="@(lista?.Where(i => i.Fecha.Date == formFecha.Date).Sum(i => i.Cantidad) ?? 0)"
                      OnGuardar="Guardar"
                      OnCancelar="() => mostrarModal = false"
                      FechaChanged="OnFormFechaChanged"

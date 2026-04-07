@@ -14,6 +14,20 @@
                     <input type="date" class="form-control" value="@Fecha.ToString("yyyy-MM-dd")"
                            @onchange="e => FechaChanged.InvokeAsync(DateTime.Parse(e.Value!.ToString()!))" />
                 </div>
+
+                @if (TotalAcumuladoDia > 0)
+                {
+                    <div class="alert py-2 mb-3" style="background:#E8F5E9;border-left:4px solid #4CAF50;border-radius:8px">
+                        <div class="d-flex align-items-center gap-2">
+                            <span>📊</span>
+                            <div>
+                                <div class="fw-bold" style="font-size:.85rem;color:#2E7D32">Acumulado del @Fecha.ToString("dd/MM/yyyy")</div>
+                                <div style="font-size:1.1rem;font-weight:800;color:#1B5E20">@Simbolo @TotalAcumuladoDia.ToString("N2")</div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
                 <div class="mb-3">
                     <label class="form-label">Tipo</label>
                     @if (Catalogos is not null && !Catalogos.Any(c => c.Activo))
@@ -73,6 +87,8 @@
     [Parameter] public int CatalogoId { get; set; }
     [Parameter] public decimal Cantidad { get; set; }
     [Parameter] public string? Notas { get; set; }
+    [Parameter] public decimal TotalAcumuladoDia { get; set; }
+    [Parameter] public string Simbolo { get; set; } = "$";
     [Parameter] public EventCallback OnGuardar { get; set; }
     [Parameter] public EventCallback OnCancelar { get; set; }
     [Parameter] public EventCallback<DateTime> FechaChanged { get; set; }

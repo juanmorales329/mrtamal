@@ -84,8 +84,20 @@ public static class UsuarioEndpoints
             return Results.Ok(new { mensaje = "Contraseña actualizada." });
         });
 
-        // Traslado explícito
-        group.MapPost("/{id:int}/trasladar", async (int id, TrasladoRequest req, AppDbContext db) =>
+        // Asignar sucursal (para usuarios sin sucursal al iniciar sesión)
+        group.MapPost("/{id:int}/asignar-sucursal", async (int id, AsignarSucursalRequest req, AppDbContext db) =>
+        {
+            var u = await db.Usuarios.FindAsync(id);
+            if (u is null) return Results.NotFound();
+            u.SucursalId = req.SucursalId;
+            db.AsignacionesSucursal.Add(new AsignacionSucursal
+            {
+                UsuarioId = id, SucursalId = req.SucursalId,
+                FechaInicio = DateTime.UtcNow, Motivo = "Selección al iniciar sesión", Activa = true
+            });
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        });
         {
             var u = await db.Usuarios.FindAsync(id);
             if (u is null) return Results.NotFound();
@@ -127,3 +139,4 @@ public static class UsuarioEndpoints
 }
 
 public record TrasladoRequest(int? SucursalId, string? Motivo);
+public record AsignarSucursalRequest(int SucursalId);

@@ -285,9 +285,15 @@
 
         if (resumen is not null)
         {
-            await Task.Delay(100);
+            await Task.Delay(200);
             await RenderizarGraficos();
         }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (resumen is not null && !cargando)
+            await RenderizarGraficos();
     }
 
     private async Task RenderizarGraficos()
