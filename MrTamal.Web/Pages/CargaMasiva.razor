@@ -139,7 +139,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        catalogos = await Api.GetCatalogosAsync();
+        try { catalogos = await Api.GetCatalogosAsync(); }
+        catch { catalogos = []; }
     }
 
     private void OnArchivoSeleccionado(InputFileChangeEventArgs e)
@@ -162,16 +163,7 @@
         preview.Clear();
         resultado = null;
 
-        List<string[]> filas = [];
-
-        if (archivoExcel is not null)
-        {
-            // Leer Excel en el cliente no es posible directamente,
-            // enviamos al API para parsear y devolver preview
-            await PreviewDesdeExcel();
-            return;
-        }
-
+        // Si hay texto pegado, procesar localmente sin llamar al API
         if (!string.IsNullOrWhiteSpace(textoPegado))
         {
             var lineas = textoPegado.Split('\n', StringSplitOptions.RemoveEmptyEntries);
@@ -191,13 +183,10 @@
 
                 var fila = new FilaPreview { Numero = num, Fecha = fechaStr, Codigo = codigo, Cantidad = cantidadStr, Notas = notas };
 
-                // Validar fecha
                 if (!DateTime.TryParseExact(fechaStr,
-                    new[] { "dd/MM/yyyy", "M/dd/yyyy", "M/d/yyyy", "yyyy-MM-dd", "MM/dd/yyyy" },
+                    new[] { "dd/MM/yyyy", "M/dd/yyyy", "M/d/yyyy", "d/MM/yyyy", "yyyy-MM-dd", "MM/dd/yyyy" },
                     null, System.Globalization.DateTimeStyles.None, out _))
                     fila.Error = $"Fecha inválida: {fechaStr}";
-
-                // Validar cantidad
                 else if (!decimal.TryParse(cantidadStr,
                     System.Globalization.NumberStyles.Any,
                     System.Globalization.CultureInfo.InvariantCulture, out var cant))
@@ -205,23 +194,26 @@
                 else
                     fila.CantidadNum = cant;
 
-                // Validar catálogo
-                if (fila.Error is null)
+                if (fila.Error is null && catalogos is not null)
                 {
-                    var cat = catalogos?.FirstOrDefault(c => c.Codigo == codigo);
+                    var cat = catalogos.FirstOrDefault(c => c.Codigo == codigo);
                     if (cat is null)
-                        fila.Error = $"Código '{codigo}' no existe";
+                        fila.Error = $"Código '{codigo}' no existe en catálogos";
                 }
 
                 fila.Valido = fila.Error is null;
                 preview.Add(fila);
             }
         }
+        else if (archivoExcel is not null)
+        {
+            // Excel: importar directamente
+            await ImportarExcelDirecto();
+        }
     }
 
-    private async Task PreviewDesdeExcel()
+    private async Task ImportarExcelDirecto()
     {
-        // Para Excel enviamos al API y mostramos el resultado como preview
         cargando = true;
         using var stream = archivoExcel!.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
         var res = await Api.CargaMasivaExcelAsync(tipoSeleccionado, stream, archivoExcel.Name);
