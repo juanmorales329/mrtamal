@@ -61,6 +61,9 @@ builder.Services.AddCors(opt =>
 
 var app = builder.Build();
 
+// CORS primero - antes de todo para que funcione aunque haya errores
+app.UseCors();
+
 // Migrar DB automáticamente
 using (var scope = app.Services.CreateScope())
 {
@@ -86,7 +89,6 @@ Directory.CreateDirectory(wwwrootPath);
 Directory.CreateDirectory(Path.Combine(wwwrootPath, "menu-images"));
 app.UseStaticFiles();
 
-app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
