@@ -99,7 +99,16 @@
 
     <!-- Gráfica -->
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header fw-bold bg-dark text-white">📈 Proyectado vs Real por Mes</div>
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span>📈 Proyectado vs Real</span>
+            <select class="form-select form-select-sm w-auto" @bind="periodoGrafica" @bind:after="ActualizarGrafica">
+                <option value="mensual">Por Mes</option>
+                <option value="bimestral">Bimestral</option>
+                <option value="trimestral">Trimestral</option>
+                <option value="cuatrimestral">Cuatrimestral</option>
+                <option value="semestral">Semestral</option>
+            </select>
+        </div>
         <div class="card-body">
             <canvas id="proyChart" height="100"></canvas>
         </div>
@@ -268,16 +277,63 @@ else if (sinMeta)
         await Cargar();
     }
 
+    private string periodoGrafica = "mensual";
+
+    private async Task ActualizarGrafica() => await RenderGrafica();
+
     private async Task RenderGrafica()
     {
         if (resumen is null) return;
         try
         {
-            var labels = resumen.DesgloseMensual.Select(m => m.NombreMes[..3]).ToArray();
-            var metas = resumen.DesgloseMensual.Select(m => (double)m.MetaMes).ToArray();
-            var reales = resumen.DesgloseMensual.Select(m => (double)m.VentaReal).ToArray();
+            string[] labels;
+            double[] metas, reales;
+
+            switch (periodoGrafica)
+            {
+                case "bimestral":
+                    (labels, metas, reales) = AgruparPeriodos(2);
+                    break;
+                case "trimestral":
+                    (labels, metas, reales) = AgruparPeriodos(3);
+                    break;
+                case "cuatrimestral":
+                    (labels, metas, reales) = AgruparPeriodos(4);
+                    break;
+                case "semestral":
+                    (labels, metas, reales) = AgruparPeriodos(6);
+                    break;
+                default: // mensual
+                    labels = resumen.DesgloseMensual.Select(m => m.NombreMes[..3]).ToArray();
+                    metas = resumen.DesgloseMensual.Select(m => (double)m.MetaMes).ToArray();
+                    reales = resumen.DesgloseMensual.Select(m => (double)m.VentaReal).ToArray();
+                    break;
+            }
+
             await JS.InvokeVoidAsync("renderProyChart", "proyChart", labels, metas, reales);
         }
-        catch { /* Chart.js puede no estar listo aún */ }
+        catch { }
+    }
+
+    private (string[] labels, double[] metas, double[] reales) AgruparPeriodos(int mesesPorPeriodo)
+    {
+        var grupos = resumen!.DesgloseMensual
+            .Select((m, i) => new { m, grupo = i / mesesPorPeriodo })
+            .GroupBy(x => x.grupo)
+            .ToList();
+
+        var labels = grupos.Select(g =>
+        {
+            var primero = g.First().m;
+            var ultimo = g.Last().m;
+            return primero.Mes == ultimo.Mes
+                ? primero.NombreMes[..3]
+                : $"{primero.NombreMes[..3]}-{ultimo.NombreMes[..3]}";
+        }).ToArray();
+
+        var metas = grupos.Select(g => (double)g.Sum(x => x.m.MetaMes)).ToArray();
+        var reales = grupos.Select(g => (double)g.Sum(x => x.m.VentaReal)).ToArray();
+
+        return (labels, metas, reales);
     }
 }
