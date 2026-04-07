@@ -4,7 +4,7 @@ using QuestPDF.Infrastructure;
 using MrTamal.Shared.DTOs;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
-using System.Drawing;
+using SysColor = System.Drawing.Color;
 
 namespace MrTamal.API.Services;
 
@@ -93,7 +93,7 @@ public class PdfService
         {
             var ws = pkg.Workbook.Worksheets.Add("Cuatrimestres");
             var headers = new[] { "#", "Período", "Meta", "Real", "Diferencia", "Cumplimiento %" };
-            for (int i = 0; i < headers.Length; i++) { ws.Cells[1, i + 1].Value = headers[i]; ws.Cells[1, i + 1].Style.Font.Bold = true; ws.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid; ws.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(Color.FromArgb(255, 109, 0)); ws.Cells[1, i + 1].Style.Font.Color.SetColor(Color.White); }
+            for (int i = 0; i < headers.Length; i++) { ws.Cells[1, i + 1].Value = headers[i]; ws.Cells[1, i + 1].Style.Font.Bold = true; ws.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid; ws.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(SysColor.FromArgb(255, 109, 0)); ws.Cells[1, i + 1].Style.Font.Color.SetColor(SysColor.White); }
             int row = 2;
             foreach (var c in r.Cuatrimestres)
             {
@@ -110,7 +110,7 @@ public class PdfService
         // Hoja mensual
         var wsM = pkg.Workbook.Worksheets.Add("Desglose Mensual");
         var hM = new[] { "Mes", "Días Lab.", "Meta", "Real", "Diferencia", "Estado" };
-        for (int i = 0; i < hM.Length; i++) { wsM.Cells[1, i + 1].Value = hM[i]; wsM.Cells[1, i + 1].Style.Font.Bold = true; wsM.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid; wsM.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(Color.FromArgb(50, 50, 50)); wsM.Cells[1, i + 1].Style.Font.Color.SetColor(Color.White); }
+        for (int i = 0; i < hM.Length; i++) { wsM.Cells[1, i + 1].Value = hM[i]; wsM.Cells[1, i + 1].Style.Font.Bold = true; wsM.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid; wsM.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(SysColor.FromArgb(50, 50, 50)); wsM.Cells[1, i + 1].Style.Font.Color.SetColor(SysColor.White); }
         int rowM = 2;
         foreach (var m in r.DesgloseMensual)
         {
@@ -131,10 +131,10 @@ public class PdfService
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         using var pkg = new ExcelPackage();
 
-        void FillSheet(ExcelWorksheet ws, List<ReporteDetalle> items, Color headerColor)
+        void FillSheet(ExcelWorksheet ws, List<ReporteDetalle> items, SysColor headerColor)
         {
             var headers = new[] { "Fecha", "Código", "Descripción", "Cantidad", "Notas" };
-            for (int i = 0; i < headers.Length; i++) { ws.Cells[1, i + 1].Value = headers[i]; ws.Cells[1, i + 1].Style.Font.Bold = true; ws.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid; ws.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(headerColor); ws.Cells[1, i + 1].Style.Font.Color.SetColor(Color.White); }
+            for (int i = 0; i < headers.Length; i++) { ws.Cells[1, i + 1].Value = headers[i]; ws.Cells[1, i + 1].Style.Font.Bold = true; ws.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid; ws.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(headerColor); ws.Cells[1, i + 1].Style.Font.Color.SetColor(SysColor.White); }
             int r = 2;
             foreach (var item in items)
             {
@@ -146,14 +146,14 @@ public class PdfService
             if (items.Any()) ws.Cells[ws.Dimension.Address].AutoFitColumns();
         }
 
-        FillSheet(pkg.Workbook.Worksheets.Add("Ingresos"), reporte.Ingresos, Color.FromArgb(46, 125, 50));
-        FillSheet(pkg.Workbook.Worksheets.Add("Egresos"), reporte.Egresos, Color.FromArgb(198, 40, 40));
+        FillSheet(pkg.Workbook.Worksheets.Add("Ingresos"), reporte.Ingresos, SysColor.FromArgb(46, 125, 50));
+        FillSheet(pkg.Workbook.Worksheets.Add("Egresos"), reporte.Egresos, SysColor.FromArgb(198, 40, 40));
 
         if (reporte.Comparaciones?.Any() == true)
         {
             var wsC = pkg.Workbook.Worksheets.Add("Comparación");
             var hC = new[] { "Período", "Ingresos", "Egresos", "Balance" };
-            for (int i = 0; i < hC.Length; i++) { wsC.Cells[1, i + 1].Value = hC[i]; wsC.Cells[1, i + 1].Style.Font.Bold = true; wsC.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid; wsC.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(Color.FromArgb(33, 150, 243)); wsC.Cells[1, i + 1].Style.Font.Color.SetColor(Color.White); }
+            for (int i = 0; i < hC.Length; i++) { wsC.Cells[1, i + 1].Value = hC[i]; wsC.Cells[1, i + 1].Style.Font.Bold = true; wsC.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid; wsC.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(SysColor.FromArgb(33, 150, 243)); wsC.Cells[1, i + 1].Style.Font.Color.SetColor(SysColor.White); }
             int r = 2;
             foreach (var c in reporte.Comparaciones)
             {

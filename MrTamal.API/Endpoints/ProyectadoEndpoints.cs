@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using MrTamal.API.Data;
+using MrTamal.API.Services;
 using MrTamal.Shared.DTOs;
 using MrTamal.Shared.Models;
 
