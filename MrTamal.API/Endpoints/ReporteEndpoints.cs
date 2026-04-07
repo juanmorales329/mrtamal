@@ -33,6 +33,21 @@ public static class ReporteEndpoints
             var pdf = pdfSvc.GenerarReportePdf(reporte, titulo);
             return Results.File(pdf, "application/pdf", $"reporte_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
         });
+
+        group.MapPost("/excel", async (ReporteRequest req, ReporteService reporteSvc, PdfService pdfSvc, ClaimsPrincipal user) =>
+        {
+            var uid = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var reporte = await reporteSvc.GenerarAsync(req, uid);
+            var titulo = req.Tipo switch
+            {
+                TipoReporte.Diario => $"Reporte Diario - {DateTime.Now:dd/MM/yyyy}",
+                TipoReporte.Semanal => $"Reporte Semanal",
+                TipoReporte.Mensual => $"Reporte Mensual - {DateTime.Now:MMMM yyyy}",
+                _ => "Reporte"
+            };
+            var excel = pdfSvc.GenerarReporteExcel(reporte, titulo, "$");
+            return Results.File(excel, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"reporte_{DateTime.Now:yyyyMMdd}.xlsx");
+        });
     }
 
     private static int GetWeekNumber(DateTime date)

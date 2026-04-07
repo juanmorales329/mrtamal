@@ -76,7 +76,26 @@ public class ApiService(HttpClient http, ILocalStorageService localStorage)
         return resp.IsSuccessStatusCode ? await resp.Content.ReadAsByteArrayAsync() : null;
     }
 
-    // Carga masiva
+    public async Task<byte[]?> GetProyectadoPdfAsync(int anio)
+    {
+        await EnsureTokenAsync();
+        var resp = await http.GetAsync($"/api/proyectado/{anio}/pdf");
+        return resp.IsSuccessStatusCode ? await resp.Content.ReadAsByteArrayAsync() : null;
+    }
+
+    public async Task<byte[]?> GetProyectadoExcelAsync(int anio)
+    {
+        await EnsureTokenAsync();
+        var resp = await http.GetAsync($"/api/proyectado/{anio}/excel");
+        return resp.IsSuccessStatusCode ? await resp.Content.ReadAsByteArrayAsync() : null;
+    }
+
+    public async Task<byte[]?> GetReporteExcelAsync(ReporteRequest req)
+    {
+        await EnsureTokenAsync();
+        var resp = await http.PostAsJsonAsync("/api/reportes/excel", req);
+        return resp.IsSuccessStatusCode ? await resp.Content.ReadAsByteArrayAsync() : null;
+    }
     public async Task<CargaResultado?> CargaMasivaTextoAsync(string tipo, string texto)
     {
         await EnsureTokenAsync();

@@ -91,7 +91,7 @@
                 </div>
             }
 
-            <div class="col-md-2 d-flex gap-2">
+            <div class="col-md-2 d-flex gap-2 flex-wrap">
                 <button class="btn btn-primary" @onclick="Generar" disabled="@cargando">
                     @(cargando ? "⏳" : "🔍 Generar")
                 </button>
@@ -99,6 +99,9 @@
                 {
                     <button class="btn btn-danger" @onclick="DescargarPdf" disabled="@descargando">
                         @(descargando ? "⏳" : "📄 PDF")
+                    </button>
+                    <button class="btn btn-success" @onclick="DescargarExcel" disabled="@descargandoExcel">
+                        @(descargandoExcel ? "⏳" : "📊 Excel")
                     </button>
                 }
             </div>
@@ -244,7 +247,7 @@
     private int mesSeleccionado = DateTime.Now.Month;
     private int anio = DateTime.Now.Year;
     private int anioComparacion = DateTime.Now.Year - 1;
-    private bool cargando, descargando;
+    private bool cargando, descargando, descargandoExcel;
     private ReporteResumen? resumen;
     private string simbolo = "$";
     private string? periodoTexto;
@@ -314,6 +317,15 @@
         if (pdf is not null)
             await JS.InvokeVoidAsync("downloadPdf", Convert.ToBase64String(pdf), $"reporte_{DateTime.Now:yyyyMMdd}.pdf");
         descargando = false;
+    }
+
+    private async Task DescargarExcel()
+    {
+        descargandoExcel = true;
+        var excel = await Api.GetReporteExcelAsync(BuildRequest());
+        if (excel is not null)
+            await JS.InvokeVoidAsync("downloadFile", Convert.ToBase64String(excel), $"reporte_{DateTime.Now:yyyyMMdd}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        descargandoExcel = false;
     }
 
     private ReporteRequest BuildRequest()

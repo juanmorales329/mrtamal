@@ -43,54 +43,40 @@
 <div class="proy-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
         <div style="font-size:1.4rem;font-weight:800">🎯 Proyectado de Ventas</div>
-        <div style="opacity:.85;font-size:.85rem">Control de metas y cumplimiento</div>
     </div>
-    <select class="form-select form-select-sm" style="width:100px;border-radius:8px" @bind="anioSeleccionado" @bind:after="Cargar">
-        @for (int a = DateTime.Now.Year + 1; a >= DateTime.Now.Year - 3; a--)
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        @if (resumen is not null)
         {
-            <option value="@a">@a</option>
+            <button class="btn btn-sm btn-light fw-semibold" @onclick="DescargarPdf" disabled="@descargando">
+                @(descargando ? "⏳" : "📄 PDF")
+            </button>
+            <button class="btn btn-sm btn-light fw-semibold" @onclick="DescargarExcel" disabled="@descargandoExcel">
+                @(descargandoExcel ? "⏳" : "📊 Excel")
+            </button>
         }
-    </select>
-</div>
-
-<!-- Configurar Meta -->
-<div class="proy-card card">
-    <div class="card-header" style="background:#FF6D00;color:white">⚙ Configurar Meta Anual @anioSeleccionado</div>
-    <div class="card-body">
-        <div class="row g-3 align-items-end">
-            <div class="col-12 col-sm-5 col-md-3">
-                <label class="form-label fw-semibold" style="font-size:.85rem">Meta de Ventas Anual (@simbolo)</label>
-                <input type="number" class="form-control" @bind="formMeta" step="100" />
-            </div>
-            <div class="col-12 col-sm-5 col-md-3">
-                <div class="form-check mt-sm-4">
-                    <input class="form-check-input" type="checkbox" @bind="formExcluirDomingos" id="domCheck" />
-                    <label class="form-check-label fw-semibold" for="domCheck" style="font-size:.88rem">Excluir domingos</label>
-                </div>
-            </div>
-            <div class="col-12 col-sm-2 col-md-2">
-                <button class="btn w-100 text-white fw-bold" style="background:#FF6D00;border-radius:8px" @onclick="GuardarMeta">
-                    💾 Guardar
-                </button>
-            </div>
-        </div>
+        <select class="form-select form-select-sm" style="width:100px;border-radius:8px" @bind="anioSeleccionado" @bind:after="Cargar">
+            @for (int a = DateTime.Now.Year + 1; a >= DateTime.Now.Year - 3; a--)
+            {
+                <option value="@a">@a</option>
+            }
+        </select>
     </div>
 </div>
 
 @if (resumen is not null)
 {
-    <!-- KPIs -->
+    <!-- KPIs compactos con meta -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
             <div class="kpi-card" style="border-left:4px solid #FF6D00">
                 <div class="kpi-label">Meta Anual</div>
-                <div class="kpi-value" style="color:#FF6D00">@simbolo @FormatK(resumen.MetaAnual)</div>
+                <div class="kpi-value" style="color:#FF6D00">@simbolo @resumen.MetaAnual.ToString("N0")</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="kpi-card" style="border-left:4px solid #4CAF50">
                 <div class="kpi-label">Venta Real</div>
-                <div class="kpi-value text-success">@simbolo @FormatK(resumen.VentaReal)</div>
+                <div class="kpi-value text-success">@simbolo @resumen.VentaReal.ToString("N0")</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
@@ -334,6 +320,7 @@ else if (sinMeta)
     private DateTime formFechaDia = DateTime.Today;
     private string? formDescDia;
     private HashSet<int> cuatrimestresExpandidos = new();
+    private bool descargando, descargandoExcel;
 
     private void ToggleCuatrimestre(int numero)
     {
@@ -343,6 +330,24 @@ else if (sinMeta)
 
     private static string FormatK(decimal v) =>
         v >= 1000 ? $"{v / 1000:N1}k" : v.ToString("N0");
+
+    private async Task DescargarPdf()
+    {
+        descargando = true;
+        var bytes = await Http.GetByteArrayAsync($"https://mrtamal.onrender.com/api/proyectado/{anioSeleccionado}/pdf");
+        if (bytes is not null)
+            await JS.InvokeVoidAsync("downloadPdf", Convert.ToBase64String(bytes), $"proyectado_{anioSeleccionado}.pdf");
+        descargando = false;
+    }
+
+    private async Task DescargarExcel()
+    {
+        descargandoExcel = true;
+        var bytes = await Http.GetByteArrayAsync($"https://mrtamal.onrender.com/api/proyectado/{anioSeleccionado}/excel");
+        if (bytes is not null)
+            await JS.InvokeVoidAsync("downloadFile", Convert.ToBase64String(bytes), $"proyectado_{anioSeleccionado}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        descargandoExcel = false;
+    }
 
     protected override async Task OnInitializedAsync()
     {

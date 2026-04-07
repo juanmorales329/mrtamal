@@ -101,6 +101,34 @@ public static class ProyectadoEndpoints
             await db.SaveChangesAsync();
             return Results.NoContent();
         });
+
+        // Exportar PDF del proyectado
+        group.MapGet("/{anio:int}/pdf", async (int anio, AppDbContext db, ClaimsPrincipal user, PdfService pdfSvc) =>
+        {
+            var uid = GetUserId(user);
+            var meta = await db.MetasAnuales.FirstOrDefaultAsync(m => m.Anio == anio);
+            if (meta is null) return Results.NotFound();
+            var diasNoLab = await db.DiasNoLaborables.Where(d => d.Fecha.Year == anio).ToListAsync();
+            var resumen = await CalcularResumen(meta, diasNoLab, db, uid, anio);
+            var sucursal = await db.Usuarios.Include(u => u.Sucursal).Where(u => u.Id == uid).Select(u => u.Sucursal).FirstOrDefaultAsync();
+            var simbolo = sucursal?.SimboloMoneda ?? "$";
+            var pdf = pdfSvc.GenerarProyectadoPdf(resumen, simbolo);
+            return Results.File(pdf, "application/pdf", $"proyectado_{anio}.pdf");
+        });
+
+        // Exportar Excel del proyectado
+        group.MapGet("/{anio:int}/excel", async (int anio, AppDbContext db, ClaimsPrincipal user, PdfService pdfSvc) =>
+        {
+            var uid = GetUserId(user);
+            var meta = await db.MetasAnuales.FirstOrDefaultAsync(m => m.Anio == anio);
+            if (meta is null) return Results.NotFound();
+            var diasNoLab = await db.DiasNoLaborables.Where(d => d.Fecha.Year == anio).ToListAsync();
+            var resumen = await CalcularResumen(meta, diasNoLab, db, uid, anio);
+            var sucursal = await db.Usuarios.Include(u => u.Sucursal).Where(u => u.Id == uid).Select(u => u.Sucursal).FirstOrDefaultAsync();
+            var simbolo = sucursal?.SimboloMoneda ?? "$";
+            var excel = pdfSvc.GenerarProyectadoExcel(resumen, simbolo);
+            return Results.File(excel, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"proyectado_{anio}.xlsx");
+        });
     }
 
     private static async Task<ResumenProyectado> CalcularResumen(
