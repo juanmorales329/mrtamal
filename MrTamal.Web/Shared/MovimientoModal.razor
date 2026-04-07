@@ -1,4 +1,5 @@
 @using MrTamal.Shared.DTOs
+@using System.Globalization
 
 <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
     <div class="modal-dialog">
@@ -27,9 +28,17 @@
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Cantidad (Q)</label>
-                    <input type="number" class="form-control" step="0.01" value="@Cantidad"
-                           @onchange="e => CantidadChanged.InvokeAsync(decimal.Parse(e.Value!.ToString()!))" />
+                    <label class="form-label">Cantidad</label>
+                    @if (!string.IsNullOrEmpty(errorCantidad))
+                    {
+                        <div class="text-danger small">@errorCantidad</div>
+                    }
+                    <input type="text" class="form-control @(string.IsNullOrEmpty(errorCantidad) ? "" : "is-invalid")"
+                           inputmode="decimal"
+                           value="@cantidadTexto"
+                           placeholder="0.00"
+                           @onchange="OnCantidadChange" />
+                    <div class="form-text">Usa punto (.) como decimal. Ej: 620.57</div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Notas (opcional)</label>
@@ -39,7 +48,8 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" @onclick="OnCancelar">Cancelar</button>
-                <button class="btn btn-primary" @onclick="OnGuardar">Guardar</button>
+                <button class="btn btn-primary" @onclick="OnGuardar"
+                        disabled="@(!string.IsNullOrEmpty(errorCantidad))">Guardar</button>
             </div>
         </div>
     </div>
@@ -58,4 +68,36 @@
     [Parameter] public EventCallback<int> CatalogoIdChanged { get; set; }
     [Parameter] public EventCallback<decimal> CantidadChanged { get; set; }
     [Parameter] public EventCallback<string?> NotasChanged { get; set; }
+
+    private string cantidadTexto = "";
+    private string errorCantidad = "";
+
+    protected override void OnParametersSet()
+    {
+        // Mostrar con punto decimal siempre
+        if (cantidadTexto == "")
+            cantidadTexto = Cantidad == 0 ? "" : Cantidad.ToString("F2", CultureInfo.InvariantCulture);
+    }
+
+    private void OnCantidadChange(ChangeEventArgs e)
+    {
+        cantidadTexto = e.Value?.ToString() ?? "";
+        // Normalizar: reemplazar coma por punto
+        var normalizado = cantidadTexto.Replace(",", ".");
+        // Si tiene más de un punto, es inválido
+        if (normalizado.Count(c => c == '.') > 1)
+        {
+            errorCantidad = "Formato inválido. Usa punto como decimal: 620.57";
+            return;
+        }
+        if (decimal.TryParse(normalizado, NumberStyles.Any, CultureInfo.InvariantCulture, out var valor))
+        {
+            errorCantidad = "";
+            CantidadChanged.InvokeAsync(valor);
+        }
+        else
+        {
+            errorCantidad = "Ingresa un número válido. Ej: 620.57";
+        }
+    }
 }
