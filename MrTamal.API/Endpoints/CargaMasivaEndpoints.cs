@@ -62,10 +62,12 @@ public static class CargaMasivaEndpoints
     private static async Task<IResult> ProcesarCarga(
         HttpRequest request, AppDbContext db, ClaimsPrincipal user, TipoCatalogo tipoCatalogo)
     {
-        var uid = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var catalogos = await db.Catalogos
-            .Where(c => c.Tipo == tipoCatalogo && c.Activo)
-            .ToListAsync();
+        try
+        {
+            var uid = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var catalogos = await db.Catalogos
+                .Where(c => c.Tipo == tipoCatalogo && c.Activo)
+                .ToListAsync();
 
         var filas = new List<FilaCarga>();
         var errores = new List<string>();
@@ -121,8 +123,10 @@ public static class CargaMasivaEndpoints
         var guardados = 0;
         foreach (var fila in filas)
         {
-            if (!DateTime.TryParseExact(fila.FechaStr, new[] { "dd/MM/yyyy", "yyyy-MM-dd", "MM/dd/yyyy" },
-                null, System.Globalization.DateTimeStyles.None, out var fecha))
+            if (!DateTime.TryParseExact(fila.FechaStr,
+                new[] { "dd/MM/yyyy", "d/MM/yyyy", "M/dd/yyyy", "M/d/yyyy", "yyyy-MM-dd", "MM/dd/yyyy", "d/M/yyyy" },
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var fecha))
             {
                 errores.Add($"Fila {fila.Numero}: fecha inválida '{fila.FechaStr}'");
                 continue;
@@ -144,22 +148,23 @@ public static class CargaMasivaEndpoints
                 continue;
             }
 
+            var fechaUtc = DateTime.SpecifyKind(fecha, DateTimeKind.Utc);
             if (tipoCatalogo == TipoCatalogo.Ingreso)
-                db.Ingresos.Add(new Ingreso { Fecha = fecha, CatalogoId = catalogo.Id, Cantidad = cantidad, Notas = fila.Notas, UsuarioId = uid });
+                db.Ingresos.Add(new Ingreso { Fecha = fechaUtc, CatalogoId = catalogo.Id, Cantidad = cantidad, Notas = fila.Notas, UsuarioId = uid, CreadoEn = DateTime.UtcNow });
             else
-                db.Egresos.Add(new Egreso { Fecha = fecha, CatalogoId = catalogo.Id, Cantidad = cantidad, Notas = fila.Notas, UsuarioId = uid });
+                db.Egresos.Add(new Egreso { Fecha = fechaUtc, CatalogoId = catalogo.Id, Cantidad = cantidad, Notas = fila.Notas, UsuarioId = uid, CreadoEn = DateTime.UtcNow });
 
             guardados++;
         }
 
         await db.SaveChangesAsync();
 
-        return Results.Ok(new
+        return Results.Ok(new { guardados, errores, mensaje = $"{guardados} registros importados. {errores.Count} errores." });
+        }
+        catch (Exception ex)
         {
-            guardados,
-            errores,
-            mensaje = $"{guardados} registros importados. {errores.Count} errores."
-        });
+            return Results.Problem($"Error interno: {ex.Message}");
+        }
     }
 
     private record FilaCarga(int Numero, string FechaStr, string Codigo, string CantidadStr, string Notas);
