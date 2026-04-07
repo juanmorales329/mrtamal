@@ -98,6 +98,9 @@ public static class UsuarioEndpoints
             await db.SaveChangesAsync();
             return Results.Ok();
         });
+
+        // Traslado explícito
+        group.MapPost("/{id:int}/trasladar", async (int id, TrasladoRequest req, AppDbContext db) =>
         {
             var u = await db.Usuarios.FindAsync(id);
             if (u is null) return Results.NotFound();
