@@ -92,6 +92,9 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Health check para mantener el servicio despierto
+app.MapGet("/health", () => Results.Ok(new { status = "ok", time = DateTime.UtcNow }));
+
 // Endpoints
 app.MapAuthEndpoints();
 app.MapCatalogoEndpoints();
