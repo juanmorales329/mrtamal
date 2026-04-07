@@ -4,20 +4,37 @@
 @inject AuthService AuthSvc
 
 <PageTitle>Egresos</PageTitle>
-<h3 class="text-danger">Egresos</h3>
 
-<div class="row mb-3 g-2">
-    <div class="col-auto">
-        <input type="date" class="form-control" @bind="desde" />
-    </div>
-    <div class="col-auto">
-        <input type="date" class="form-control" @bind="hasta" />
-    </div>
-    <div class="col-auto">
-        <button class="btn btn-outline-secondary" @onclick="Cargar">Filtrar</button>
-    </div>
-    <div class="col-auto ms-auto">
-        <button class="btn btn-danger" @onclick="() => AbrirModal(null)">+ Nuevo Egreso</button>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="text-danger mb-0">💸 Egresos</h3>
+    <button class="btn btn-danger" @onclick="() => AbrirModal(null)">+ Nuevo Egreso</button>
+</div>
+
+<!-- Navegación por mes -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="MesAnterior">◀</button>
+            <div class="d-flex gap-2">
+                <select class="form-select form-select-sm" style="width:130px" @bind="mesActual" @bind:after="Cargar">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        var mes = m;
+                        var nombre = new DateTime(2000, mes, 1).ToString("MMMM");
+                        <option value="@mes">@nombre</option>
+                    }
+                </select>
+                <select class="form-select form-select-sm" style="width:90px" @bind="anioActual" @bind:after="Cargar">
+                    @for (int a = DateTime.Now.Year + 1; a >= DateTime.Now.Year - 5; a--)
+                    {
+                        <option value="@a">@a</option>
+                    }
+                </select>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="MesSiguiente">▶</button>
+            <span class="badge bg-danger fs-6">@mesAnioTexto</span>
+            <button class="btn btn-sm btn-outline-primary ms-auto" @onclick="IrHoy">Hoy</button>
+        </div>
     </div>
 </div>
 
@@ -27,34 +44,40 @@
 }
 else
 {
-    <table class="table table-hover">
-        <thead class="table-danger">
-            <tr><th>Fecha</th><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Notas</th><th></th></tr>
-        </thead>
-        <tbody>
-            @foreach (var e in lista)
-            {
-                <tr>
-                    <td>@e.Fecha.ToString("dd/MM/yyyy")</td>
-                    <td><span class="badge bg-secondary">@e.CodigoCatalogo</span></td>
-                    <td>@e.DescripcionCatalogo</td>
-                    <td class="text-danger fw-bold">@simbolo @e.Cantidad.ToString("N2")</td>
-                    <td>@e.Notas</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AbrirModal(e)">✏</button>
-                        <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(e.Id)">🗑</button>
-                    </td>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-danger">
+                <tr><th>Fecha</th><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Notas</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var e in lista)
+                {
+                    <tr>
+                        <td>@e.Fecha.ToString("dd/MM/yyyy")</td>
+                        <td><span class="badge bg-secondary">@e.CodigoCatalogo</span></td>
+                        <td>@e.DescripcionCatalogo</td>
+                        <td class="text-danger fw-bold">@simbolo @e.Cantidad.ToString("N2")</td>
+                        <td class="text-muted small">@e.Notas</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AbrirModal(e)">✏</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(e.Id)">🗑</button>
+                        </td>
+                    </tr>
+                }
+                @if (!lista.Any())
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">Sin egresos en este mes</td></tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr class="table-danger">
+                    <td colspan="3"><strong>Total @mesAnioTexto</strong></td>
+                    <td><strong>@simbolo @lista.Sum(e => e.Cantidad).ToString("N2")</strong></td>
+                    <td colspan="2"></td>
                 </tr>
-            }
-        </tbody>
-        <tfoot>
-            <tr class="table-danger">
-                <td colspan="3"><strong>Total</strong></td>
-                <td><strong>@simbolo @lista.Sum(e => e.Cantidad).ToString("N2")</strong></td>
-                <td colspan="2"></td>
-            </tr>
-        </tfoot>
-    </table>
+            </tfoot>
+        </table>
+    </div>
 }
 
 @if (mostrarModal)
@@ -74,9 +97,10 @@ else
 }
 
 @code {
-    private List<MrTamal.Shared.DTOs.MovimientoDto>? lista;
-    private List<MrTamal.Shared.DTOs.CatalogoDto>? catalogos;
-    private DateTime? desde, hasta;
+    private List<MovimientoDto>? lista;
+    private List<CatalogoDto>? catalogos;
+    private int mesActual = DateTime.Now.Month;
+    private int anioActual = DateTime.Now.Year;
     private bool mostrarModal;
     private int editandoId;
     private DateTime formFecha = DateTime.Today;
@@ -85,16 +109,44 @@ else
     private string? formNotas;
     private string simbolo = "$";
 
+    private string mesAnioTexto => new DateTime(anioActual, mesActual, 1).ToString("MMMM yyyy");
+
     protected override async Task OnInitializedAsync()
     {
         simbolo = await AuthSvc.GetSimboloMonedaAsync();
-        catalogos = await Api.GetCatalogosAsync(MrTamal.Shared.Models.TipoCatalogo.Egreso);
+        catalogos = await Api.GetCatalogosAsync(TipoCatalogo.Egreso);
         await Cargar();
     }
 
-    private async Task Cargar() => lista = await Api.GetEgresosAsync(desde, hasta);
+    private async Task Cargar()
+    {
+        var desde = new DateTime(anioActual, mesActual, 1);
+        var hasta = desde.AddMonths(1).AddDays(-1);
+        lista = await Api.GetEgresosAsync(desde, hasta);
+    }
 
-    private void AbrirModal(MrTamal.Shared.DTOs.MovimientoDto? m)
+    private async Task MesAnterior()
+    {
+        if (mesActual == 1) { mesActual = 12; anioActual--; }
+        else mesActual--;
+        await Cargar();
+    }
+
+    private async Task MesSiguiente()
+    {
+        if (mesActual == 12) { mesActual = 1; anioActual++; }
+        else mesActual++;
+        await Cargar();
+    }
+
+    private async Task IrHoy()
+    {
+        mesActual = DateTime.Now.Month;
+        anioActual = DateTime.Now.Year;
+        await Cargar();
+    }
+
+    private void AbrirModal(MovimientoDto? m)
     {
         editandoId = m?.Id ?? 0;
         formFecha = m?.Fecha ?? DateTime.Today;
