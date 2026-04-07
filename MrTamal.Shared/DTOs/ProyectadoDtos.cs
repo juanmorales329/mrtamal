@@ -29,7 +29,7 @@ public record ResumenProyectado(
     // Días no laborables
     List<DiaNolaboralDto> DiasNoLaborables,
     // Cuatrimestres fijos (100k cada uno)
-    List<ResumenCuatrimestre> Cuatrimestres
+    List<ResumenCuatrimestre>? Cuatrimestres = null
 );
 
 public record ResumenCuatrimestre(

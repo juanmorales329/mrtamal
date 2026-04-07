@@ -77,6 +77,8 @@
     </div>
 
     <!-- Cuatrimestres fijos: 100k cada uno -->
+    @if (resumen.Cuatrimestres?.Any() == true)
+    {
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header fw-bold text-white" style="background:#FF6D00">🎯 Control por Cuatrimestre (Meta: @simbolo 100,000 c/u)</div>
         <div class="card-body p-0">
@@ -111,6 +113,7 @@
             </table>
         </div>
     </div>
+    }
 
     <!-- Tabla de metas por período -->
     <div class="card border-0 shadow-sm mb-4">
