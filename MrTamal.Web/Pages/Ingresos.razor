@@ -1,6 +1,7 @@
 @page "/ingresos"
 @attribute [Authorize(Roles = "Admin,Gerente,Contador,Usuario")]
 @inject ApiService Api
+@inject AuthService AuthSvc
 
 <PageTitle>Ingresos</PageTitle>
 <h3 class="text-success">Ingresos</h3>
@@ -37,7 +38,7 @@ else
                     <td>@i.Fecha.ToString("dd/MM/yyyy")</td>
                     <td><span class="badge bg-secondary">@i.CodigoCatalogo</span></td>
                     <td>@i.DescripcionCatalogo</td>
-                    <td class="text-success fw-bold">Q @i.Cantidad.ToString("N2")</td>
+                    <td class="text-success fw-bold">@simbolo @i.Cantidad.ToString("N2")</td>
                     <td>@i.Notas</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AbrirModal(i)">✏</button>
@@ -49,7 +50,7 @@ else
         <tfoot>
             <tr class="table-success">
                 <td colspan="3"><strong>Total</strong></td>
-                <td><strong>Q @lista.Sum(i => i.Cantidad).ToString("N2")</strong></td>
+                <td><strong>@simbolo @lista.Sum(i => i.Cantidad).ToString("N2")</strong></td>
                 <td colspan="2"></td>
             </tr>
         </tfoot>
@@ -82,9 +83,11 @@ else
     private int formCatalogoId;
     private decimal formCantidad;
     private string? formNotas;
+    private string simbolo = "$";
 
     protected override async Task OnInitializedAsync()
     {
+        simbolo = await AuthSvc.GetSimboloMonedaAsync();
         catalogos = await Api.GetCatalogosAsync(MrTamal.Shared.Models.TipoCatalogo.Ingreso);
         await Cargar();
     }
