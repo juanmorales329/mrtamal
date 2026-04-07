@@ -4,85 +4,121 @@
 @inject IJSRuntime JS
 
 <PageTitle>Carga Masiva</PageTitle>
-<h3>Carga Masiva de Datos</h3>
+<h3>📤 Carga Masiva de Datos</h3>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-success text-white">Plantilla Excel</div>
-            <div class="card-body">
-                <p>Descarga la plantilla, llénala y súbela. Columnas requeridas:</p>
-                <table class="table table-sm table-bordered">
-                    <thead class="table-dark">
-                        <tr><th>Fecha</th><th>Codigo</th><th>Cantidad</th><th>Notas</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>01/04/2026</td><td>SAL</td><td>5000.00</td><td>Salario</td></tr>
-                        <tr><td>05/04/2026</td><td>BON</td><td>1000.00</td><td>Bono</td></tr>
-                    </tbody>
-                </table>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-success btn-sm" @onclick='() => DescargarPlantilla("ingresos")'>
-                        ⬇ Plantilla Ingresos
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm" @onclick='() => DescargarPlantilla("egresos")'>
-                        ⬇ Plantilla Egresos
-                    </button>
-                </div>
-            </div>
-        </div>
+<!-- Paso 1: Seleccionar tipo y fuente -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header fw-bold" style="background:#FF6D00;color:white">
+        Paso 1 - Configurar
     </div>
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-info text-white">Pegar desde Excel</div>
-            <div class="card-body">
-                <p>Copia las celdas de tu Excel (sin encabezado) y pégalas aquí:</p>
-                <p class="text-muted small">Formato: <code>Fecha[Tab]Codigo[Tab]Cantidad[Tab]Notas</code></p>
-                <textarea class="form-control font-monospace" rows="6" @bind="textoPegado"
-                          placeholder="01/04/2026&#9;SAL&#9;5000&#9;Salario&#10;05/04/2026&#9;BON&#9;1000&#9;Bono"></textarea>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card mb-4">
     <div class="card-body">
-        <div class="row g-3 align-items-end">
+        <div class="row g-3">
             <div class="col-md-3">
-                <label class="form-label">Tipo</label>
+                <label class="form-label fw-bold">Tipo</label>
                 <select class="form-select" @bind="tipoSeleccionado">
-                    <option value="ingresos">Ingresos</option>
-                    <option value="egresos">Egresos</option>
+                    <option value="ingresos">💰 Ingresos</option>
+                    <option value="egresos">💸 Egresos</option>
                 </select>
             </div>
             <div class="col-md-4">
-                <label class="form-label">Archivo Excel (.xlsx)</label>
+                <label class="form-label fw-bold">Archivo Excel (.xlsx)</label>
                 <InputFile class="form-control" OnChange="OnArchivoSeleccionado" accept=".xlsx" />
             </div>
-            <div class="col-md-5 d-flex gap-2 align-items-end">
-                <button class="btn btn-primary" @onclick="CargarDesdeTexto" disabled="@(cargando || string.IsNullOrWhiteSpace(textoPegado))">
-                    📋 Importar texto pegado
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button class="btn btn-outline-success btn-sm" @onclick='() => DescargarPlantilla("ingresos")'>
+                    ⬇ Plantilla Ing.
                 </button>
-                <button class="btn btn-success" @onclick="CargarDesdeExcel" disabled="@(cargando || archivoExcel is null)">
-                    📂 Importar Excel
+                <button class="btn btn-outline-danger btn-sm" @onclick='() => DescargarPlantilla("egresos")'>
+                    ⬇ Plantilla Egr.
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-@if (cargando)
+<!-- Paso 2: Pegar o previsualizar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header fw-bold" style="background:#1a1a2e;color:white">
+        Paso 2 - Datos (pega desde Excel o carga archivo)
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-2">
+            Copia las celdas de tu Excel <strong>sin encabezado</strong> y pégalas aquí, o carga el archivo arriba.
+            Formato: <code>Fecha | Codigo | Cantidad | Notas</code>
+        </p>
+        <textarea class="form-control font-monospace" rows="8" @bind="textoPegado"
+                  placeholder="01/05/2025&#9;1001&#9;200&#9;NA&#10;02/05/2025&#9;1001&#9;260&#9;NA"></textarea>
+        <div class="mt-2 d-flex gap-2">
+            <button class="btn btn-primary" @onclick="PrevisualzarTexto"
+                    disabled="@(string.IsNullOrWhiteSpace(textoPegado) && archivoExcel is null)">
+                👁 Previsualizar
+            </button>
+            <button class="btn btn-secondary" @onclick="Limpiar">🗑 Limpiar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Paso 3: Preview -->
+@if (preview.Any())
 {
-    <div class="alert alert-info">Procesando...</div>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center fw-bold bg-dark text-white">
+            <span>Paso 3 - Preview (@preview.Count filas) - Verifica antes de importar</span>
+            <div class="d-flex gap-2">
+                <span class="badge bg-success">@preview.Count(r => r.Valido) válidas</span>
+                <span class="badge bg-danger">@preview.Count(r => !r.Valido) con error</span>
+            </div>
+        </div>
+        <div class="card-body p-0" style="max-height:400px;overflow-y:auto">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-dark sticky-top">
+                    <tr><th>#</th><th>Fecha</th><th>Código</th><th>Cantidad</th><th>Notas</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var fila in preview)
+                    {
+                        <tr class="@(fila.Valido ? "" : "table-danger")">
+                            <td class="text-muted small">@fila.Numero</td>
+                            <td>@fila.Fecha</td>
+                            <td><span class="badge bg-secondary">@fila.Codigo</span></td>
+                            <td class="fw-bold">@fila.Cantidad</td>
+                            <td class="text-muted small">@fila.Notas</td>
+                            <td>
+                                @if (fila.Valido)
+                                {
+                                    <span class="badge bg-success">✓</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger" title="@fila.Error">⚠ @fila.Error</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <span class="text-muted small">
+                Total válidas: <strong>@preview.Count(r => r.Valido)</strong> |
+                Suma: <strong>@preview.Where(r => r.Valido).Sum(r => r.CantidadNum).ToString("N2")</strong>
+            </span>
+            <button class="btn btn-success px-4" @onclick="ImportarConfirmado"
+                    disabled="@(!preview.Any(r => r.Valido) || cargando)">
+                @(cargando ? "⏳ Importando..." : $"✅ Importar {preview.Count(r => r.Valido)} registros")
+            </button>
+        </div>
+    </div>
 }
 
+<!-- Resultado -->
 @if (resultado is not null)
 {
-    <div class="alert @(resultado.Errores.Any() ? "alert-warning" : "alert-success")">
-        <strong>@resultado.Mensaje</strong>
+    <div class="alert @(resultado.Errores.Any() ? "alert-warning" : "alert-success") border-0 shadow-sm">
+        <h6>@resultado.Mensaje</h6>
         @if (resultado.Errores.Any())
         {
-            <ul class="mt-2 mb-0">
+            <ul class="mb-0 small">
                 @foreach (var e in resultado.Errores)
                 {
                     <li>@e</li>
@@ -98,27 +134,122 @@
     private IBrowserFile? archivoExcel;
     private bool cargando;
     private ResultadoCarga? resultado;
+    private List<FilaPreview> preview = [];
+    private List<CatalogoDto>? catalogos;
 
-    private void OnArchivoSeleccionado(InputFileChangeEventArgs e) =>
-        archivoExcel = e.File;
-
-    private async Task CargarDesdeTexto()
+    protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrWhiteSpace(textoPegado)) return;
-        cargando = true; resultado = null;
-        var res = await Api.CargaMasivaTextoAsync(tipoSeleccionado, textoPegado);
-        if (res is not null) resultado = new ResultadoCarga { Guardados = res.Guardados, Errores = res.Errores, Mensaje = res.Mensaje };
-        cargando = false;
+        catalogos = await Api.GetCatalogosAsync();
     }
 
-    private async Task CargarDesdeExcel()
+    private void OnArchivoSeleccionado(InputFileChangeEventArgs e)
     {
-        if (archivoExcel is null) return;
-        cargando = true; resultado = null;
-        using var stream = archivoExcel.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+        archivoExcel = e.File;
+        preview.Clear();
+        resultado = null;
+    }
+
+    private void Limpiar()
+    {
+        textoPegado = null;
+        archivoExcel = null;
+        preview.Clear();
+        resultado = null;
+    }
+
+    private async Task PrevisualzarTexto()
+    {
+        preview.Clear();
+        resultado = null;
+
+        List<string[]> filas = [];
+
+        if (archivoExcel is not null)
+        {
+            // Leer Excel en el cliente no es posible directamente,
+            // enviamos al API para parsear y devolver preview
+            await PreviewDesdeExcel();
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(textoPegado))
+        {
+            var lineas = textoPegado.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            int num = 0;
+            foreach (var linea in lineas)
+            {
+                num++;
+                var partes = linea.Contains('\t')
+                    ? linea.Split('\t')
+                    : linea.Split(',');
+                if (partes.Length < 3) continue;
+
+                var fechaStr = partes[0].Trim();
+                var codigo = partes[1].Trim().ToUpper();
+                var cantidadStr = partes[2].Trim().Replace(",", ".");
+                var notas = partes.Length > 3 ? partes[3].Trim() : "";
+
+                var fila = new FilaPreview { Numero = num, Fecha = fechaStr, Codigo = codigo, Cantidad = cantidadStr, Notas = notas };
+
+                // Validar fecha
+                if (!DateTime.TryParseExact(fechaStr,
+                    new[] { "dd/MM/yyyy", "M/dd/yyyy", "M/d/yyyy", "yyyy-MM-dd", "MM/dd/yyyy" },
+                    null, System.Globalization.DateTimeStyles.None, out _))
+                    fila.Error = $"Fecha inválida: {fechaStr}";
+
+                // Validar cantidad
+                else if (!decimal.TryParse(cantidadStr,
+                    System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var cant))
+                    fila.Error = $"Cantidad inválida: {cantidadStr}";
+                else
+                    fila.CantidadNum = cant;
+
+                // Validar catálogo
+                if (fila.Error is null)
+                {
+                    var cat = catalogos?.FirstOrDefault(c => c.Codigo == codigo);
+                    if (cat is null)
+                        fila.Error = $"Código '{codigo}' no existe";
+                }
+
+                fila.Valido = fila.Error is null;
+                preview.Add(fila);
+            }
+        }
+    }
+
+    private async Task PreviewDesdeExcel()
+    {
+        // Para Excel enviamos al API y mostramos el resultado como preview
+        cargando = true;
+        using var stream = archivoExcel!.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
         var res = await Api.CargaMasivaExcelAsync(tipoSeleccionado, stream, archivoExcel.Name);
-        if (res is not null) resultado = new ResultadoCarga { Guardados = res.Guardados, Errores = res.Errores, Mensaje = res.Mensaje };
         cargando = false;
+        if (res is not null)
+            resultado = new ResultadoCarga { Guardados = res.Guardados, Errores = res.Errores, Mensaje = res.Mensaje };
+    }
+
+    private async Task ImportarConfirmado()
+    {
+        if (!preview.Any(r => r.Valido)) return;
+        cargando = true;
+        resultado = null;
+
+        // Construir texto solo con filas válidas
+        var lineasValidas = preview
+            .Where(r => r.Valido)
+            .Select(r => $"{r.Fecha}\t{r.Codigo}\t{r.CantidadNum.ToString(System.Globalization.CultureInfo.InvariantCulture)}\t{r.Notas}");
+        var texto = string.Join("\n", lineasValidas);
+
+        var res = await Api.CargaMasivaTextoAsync(tipoSeleccionado, texto);
+        cargando = false;
+
+        if (res is not null)
+        {
+            resultado = new ResultadoCarga { Guardados = res.Guardados, Errores = res.Errores, Mensaje = res.Mensaje };
+            if (res.Guardados > 0) preview.Clear();
+        }
     }
 
     private async Task DescargarPlantilla(string tipo)
@@ -129,6 +260,18 @@
             var base64 = Convert.ToBase64String(bytes);
             await JS.InvokeVoidAsync("downloadExcel", base64, $"plantilla_{tipo}.xlsx");
         }
+    }
+
+    private class FilaPreview
+    {
+        public int Numero { get; set; }
+        public string Fecha { get; set; } = "";
+        public string Codigo { get; set; } = "";
+        public string Cantidad { get; set; } = "";
+        public decimal CantidadNum { get; set; }
+        public string Notas { get; set; } = "";
+        public bool Valido { get; set; }
+        public string? Error { get; set; }
     }
 
     private class ResultadoCarga
