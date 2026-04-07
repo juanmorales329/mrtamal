@@ -228,19 +228,42 @@
         cargando = true;
         resultado = null;
 
-        // Construir texto solo con filas válidas
-        var lineasValidas = preview
-            .Where(r => r.Valido)
-            .Select(r => $"{r.Fecha}\t{r.Codigo}\t{r.CantidadNum.ToString(System.Globalization.CultureInfo.InvariantCulture)}\t{r.Notas}");
-        var texto = string.Join("\n", lineasValidas);
-
-        var res = await Api.CargaMasivaTextoAsync(tipoSeleccionado, texto);
-        cargando = false;
-
-        if (res is not null)
+        try
         {
-            resultado = new ResultadoCarga { Guardados = res.Guardados, Errores = res.Errores, Mensaje = res.Mensaje };
-            if (res.Guardados > 0) preview.Clear();
+            var lineasValidas = preview
+                .Where(r => r.Valido)
+                .Select(r => $"{r.Fecha}\t{r.Codigo}\t{r.CantidadNum.ToString(System.Globalization.CultureInfo.InvariantCulture)}\t{r.Notas}");
+            var texto = string.Join("\n", lineasValidas);
+
+            var res = await Api.CargaMasivaTextoAsync(tipoSeleccionado, texto);
+
+            if (res is not null)
+            {
+                resultado = new ResultadoCarga { Guardados = res.Guardados, Errores = res.Errores, Mensaje = res.Mensaje };
+                if (res.Guardados > 0) preview.Clear();
+            }
+            else
+            {
+                resultado = new ResultadoCarga
+                {
+                    Guardados = 0,
+                    Errores = ["Error de conexión con el servidor. Verifica que el API esté activo."],
+                    Mensaje = "No se pudo conectar al servidor."
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            resultado = new ResultadoCarga
+            {
+                Guardados = 0,
+                Errores = [$"Error: {ex.Message}"],
+                Mensaje = "Error al importar."
+            };
+        }
+        finally
+        {
+            cargando = false;
         }
     }
 
