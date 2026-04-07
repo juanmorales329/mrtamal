@@ -46,6 +46,7 @@ function renderProyChart(canvasId, labels, metas, reales) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: { legend: { position: 'top' } },
             scales: { y: { beginAtZero: true } }
         }
