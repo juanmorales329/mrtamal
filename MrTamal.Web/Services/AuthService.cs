@@ -10,6 +10,8 @@ public class AuthService(HttpClient http, ILocalStorageService localStorage, Aut
     private const string TokenKey = "authToken";
     private const string SimboloKey = "simboloMoneda";
     private const string RolKey = "userRol";
+    private const string UserIdKey = "userId";
+    private const string UserNameKey = "userName";
 
     public async Task<AuthResponse?> LoginAsync(LoginRequest req)
     {
@@ -35,6 +37,8 @@ public class AuthService(HttpClient http, ILocalStorageService localStorage, Aut
         await localStorage.SetItemAsync(TokenKey, auth.Token);
         await localStorage.SetItemAsync(SimboloKey, auth.SimboloMoneda);
         await localStorage.SetItemAsync(RolKey, auth.Rol);
+        await localStorage.SetItemAsync(UserIdKey, auth.Id.ToString());
+        await localStorage.SetItemAsync(UserNameKey, auth.Nombre);
         ((JwtAuthStateProvider)authProvider).NotifyUserAuthentication(auth.Token, auth.SimboloMoneda);
     }
 
@@ -49,6 +53,8 @@ public class AuthService(HttpClient http, ILocalStorageService localStorage, Aut
         await localStorage.RemoveItemAsync(TokenKey);
         await localStorage.RemoveItemAsync(SimboloKey);
         await localStorage.RemoveItemAsync(RolKey);
+        await localStorage.RemoveItemAsync(UserIdKey);
+        await localStorage.RemoveItemAsync(UserNameKey);
         ((JwtAuthStateProvider)authProvider).NotifyUserLogout();
     }
 }

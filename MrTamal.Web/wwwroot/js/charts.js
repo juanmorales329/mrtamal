@@ -13,7 +13,7 @@ function renderBarChart(canvasId, labels, ingresos, egresos) {
                 { label: 'Egresos', data: egresos, backgroundColor: '#F44336' }
             ]
         },
-        options: { responsive: true, plugins: { legend: { position: 'top' } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
     });
 }
 
@@ -27,7 +27,7 @@ function renderDoughnutChart(canvasId, totalIngresos, totalEgresos) {
             labels: ['Ingresos', 'Egresos'],
             datasets: [{ data: [totalIngresos, totalEgresos], backgroundColor: ['#4CAF50', '#F44336'] }]
         },
-        options: { responsive: true }
+        options: { responsive: true, maintainAspectRatio: false }
     });
 }
 

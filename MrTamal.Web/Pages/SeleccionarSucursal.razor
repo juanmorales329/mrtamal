@@ -1,0 +1,103 @@
+@page "/seleccionar-sucursal"
+@layout EmptyLayout
+@inject ApiService Api
+@inject AuthService AuthSvc
+@inject NavigationManager Nav
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+<div class="container d-flex justify-content-center align-items-center" style="min-height:100vh;background:#f8f9fa">
+    <div class="card shadow-lg" style="width:420px;border-radius:16px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#FF6D00,#FF8F00);padding:24px;text-align:center">
+            <div style="font-size:2.5rem">🏪</div>
+            <h5 class="text-white fw-bold mb-0">Selecciona tu Sucursal</h5>
+            <small class="text-white" style="opacity:.85">¿Desde qué sucursal estás trabajando hoy?</small>
+        </div>
+        <div class="card-body p-4">
+            @if (cargando)
+            {
+                <div class="text-center py-4 text-muted">Cargando sucursales...</div>
+            }
+            else if (sucursales is null || !sucursales.Any())
+            {
+                <div class="alert alert-warning">No hay sucursales registradas. Contacta al administrador.</div>
+                <button class="btn btn-secondary w-100" @onclick="Continuar">Continuar sin sucursal</button>
+            }
+            else
+            {
+                <p class="text-muted small mb-3">Hola <strong>@nombre</strong>, selecciona la sucursal donde trabajarás:</p>
+                <div class="d-flex flex-column gap-2 mb-4">
+                    @foreach (var s in sucursales)
+                    {
+                        var sel = s;
+                        <button class="btn text-start p-3 @(sucursalSeleccionada == sel.Id ? "btn-warning" : "btn-outline-secondary")"
+                                style="border-radius:10px;transition:all .2s"
+                                @onclick="() => sucursalSeleccionada = sel.Id">
+                            <div class="d-flex align-items-center gap-3">
+                                <span style="font-size:1.5rem">🏪</span>
+                                <div>
+                                    <div class="fw-bold">@sel.Nombre</div>
+                                    <small class="text-muted">@sel.Pais · @sel.SimboloMoneda</small>
+                                </div>
+                                @if (sucursalSeleccionada == sel.Id)
+                                {
+                                    <span class="ms-auto text-warning fw-bold">✓</span>
+                                }
+                            </div>
+                        </button>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(error))
+                {
+                    <div class="alert alert-danger py-2 small">@error</div>
+                }
+                <button class="btn w-100 fw-bold text-white" style="background:#FF6D00;border-radius:8px"
+                        @onclick="Confirmar" disabled="@(sucursalSeleccionada == 0 || guardando)">
+                    @(guardando ? "⏳ Guardando..." : "✓ Confirmar y Entrar")
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<SucursalDto>? sucursales;
+    private int sucursalSeleccionada;
+    private bool cargando = true, guardando;
+    private string? error;
+    private string nombre = "";
+    private int usuarioId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        nombre = await localStorage.GetItemAsync<string>("userName") ?? "";
+        var idStr = await localStorage.GetItemAsync<string>("userId");
+        int.TryParse(idStr, out usuarioId);
+
+        sucursales = await Api.GetSucursalesAsync();
+        sucursales = sucursales?.Where(s => s.Activa).ToList();
+        cargando = false;
+    }
+
+    private async Task Confirmar()
+    {
+        if (sucursalSeleccionada == 0) return;
+        guardando = true;
+        error = null;
+        try
+        {
+            var sucursal = sucursales!.First(s => s.Id == sucursalSeleccionada);
+            // Asignar sucursal al usuario
+            await Api.AsignarSucursalAsync(usuarioId, sucursalSeleccionada);
+            // Guardar símbolo de moneda actualizado
+            await localStorage.SetItemAsync("simboloMoneda", sucursal.SimboloMoneda);
+            Nav.NavigateTo("", replace: true);
+        }
+        catch
+        {
+            error = "Error al asignar la sucursal. Intenta de nuevo.";
+            guardando = false;
+        }
+    }
+
+    private void Continuar() => Nav.NavigateTo("", replace: true);
+}

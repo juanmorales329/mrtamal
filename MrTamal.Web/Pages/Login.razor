@@ -88,8 +88,18 @@
         loading = true; error = null;
         var result = await AuthSvc.LoginAsync(new(username, password));
         loading = false;
-        if (result is null) error = "Usuario o contraseña incorrectos.";
-        else Nav.NavigateTo("");
+        if (result is null)
+        {
+            error = "Usuario o contraseña incorrectos.";
+        }
+        else
+        {
+            // Si no tiene sucursal asignada, pedir que seleccione
+            if (!result.SucursalId.HasValue)
+                Nav.NavigateTo("seleccionar-sucursal");
+            else
+                Nav.NavigateTo("");
+        }
     }
 
     private async Task HandleSetup()

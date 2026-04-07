@@ -43,7 +43,7 @@ public static class AuthEndpoints
 
             var simbolo = ObtenerSimbolo(usuario.Sucursal);
             var token = tokenSvc.GenerarToken(usuario);
-            return Results.Ok(new AuthResponse(token, usuario.Nombre, usuario.Username, usuario.Rol, usuario.SucursalId, simbolo));
+            return Results.Ok(new AuthResponse(token, usuario.Nombre, usuario.Username, usuario.Rol, usuario.SucursalId, simbolo, usuario.Id));
         });
 
         // Verificar si necesita setup inicial
