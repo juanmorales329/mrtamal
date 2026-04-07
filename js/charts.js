@@ -65,3 +65,10 @@ function downloadExcel(base64, filename) {
     link.download = filename;
     link.click();
 }
+
+function downloadFile(base64, filename, mimeType) {
+    var link = document.createElement('a');
+    link.href = 'data:' + mimeType + ';base64,' + base64;
+    link.download = filename;
+    link.click();
+}
