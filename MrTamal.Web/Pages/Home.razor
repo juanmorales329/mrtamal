@@ -1,6 +1,7 @@
 ﻿@page "/"
 @attribute [Authorize]
 @inject ApiService Api
+@inject AuthService AuthSvc
 
 <PageTitle>Inicio - MrTamal</PageTitle>
 
@@ -17,7 +18,7 @@ else
             <div class="card border-success">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Ingresos</h6>
-                    <h3 class="text-success">Q @resumen.TotalIngresos.ToString("N2")</h3>
+                    <h3 class="text-success">@simbolo @resumen.TotalIngresos.ToString("N2")</h3>
                 </div>
             </div>
         </div>
@@ -25,7 +26,7 @@ else
             <div class="card border-danger">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Egresos</h6>
-                    <h3 class="text-danger">Q @resumen.TotalEgresos.ToString("N2")</h3>
+                    <h3 class="text-danger">@simbolo @resumen.TotalEgresos.ToString("N2")</h3>
                 </div>
             </div>
         </div>
@@ -33,7 +34,9 @@ else
             <div class="card @(resumen.Balance >= 0 ? "border-primary" : "border-warning")">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Balance</h6>
-                    <h3 class="@(resumen.Balance >= 0 ? "text-primary" : "text-warning")">Q @resumen.Balance.ToString("N2")</h3>
+                    <h3 class="@(resumen.Balance >= 0 ? "text-primary" : "text-warning")">
+                        @simbolo @resumen.Balance.ToString("N2")
+                    </h3>
                 </div>
             </div>
         </div>
@@ -50,7 +53,7 @@ else
                         <tr>
                             <td>@i.Fecha.ToString("dd/MM")</td>
                             <td>@i.Descripcion</td>
-                            <td class="text-success">Q @i.Cantidad.ToString("N2")</td>
+                            <td class="text-success">@simbolo @i.Cantidad.ToString("N2")</td>
                         </tr>
                     }
                 </tbody>
@@ -66,7 +69,7 @@ else
                         <tr>
                             <td>@e.Fecha.ToString("dd/MM")</td>
                             <td>@e.Descripcion</td>
-                            <td class="text-danger">Q @e.Cantidad.ToString("N2")</td>
+                            <td class="text-danger">@simbolo @e.Cantidad.ToString("N2")</td>
                         </tr>
                     }
                 </tbody>
@@ -77,9 +80,11 @@ else
 
 @code {
     private MrTamal.Shared.DTOs.ReporteResumen? resumen;
+    private string simbolo = "$";
 
     protected override async Task OnInitializedAsync()
     {
+        simbolo = await AuthSvc.GetSimboloMonedaAsync();
         resumen = await Api.GetReporteAsync(new(
             MrTamal.Shared.DTOs.TipoReporte.Mensual,
             null, null, null, null, null

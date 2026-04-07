@@ -39,7 +39,7 @@ public class AuthService(HttpClient http, ILocalStorageService localStorage, Aut
     }
 
     public async Task<string> GetSimboloMonedaAsync() =>
-        await localStorage.GetItemAsync<string>(SimboloKey) ?? "$";
+        await localStorage.GetItemAsync<string>(SimboloKey) is string s && !string.IsNullOrEmpty(s) ? s : "$";
 
     public async Task<string> GetRolAsync() =>
         await localStorage.GetItemAsync<string>(RolKey) ?? "Usuario";
