@@ -177,6 +177,22 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
     border-top: 1px solid rgba(255,255,255,0.1);
 }
 
+.sidebar-sucursal-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: rgba(255,109,0,0.15);
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 16px;
+    cursor: pointer;
+    text-align: left;
+    transition: background .2s;
+}
+.sidebar-sucursal-btn:hover { background: rgba(255,109,0,0.3); }
+
 /* ===== MAIN CONTENT ===== */
 .main-content {
     margin-left: var(--sidebar-width);
