@@ -12,6 +12,9 @@ public class AuthService(HttpClient http, ILocalStorageService localStorage, Aut
     private const string RolKey = "userRol";
     private const string UserIdKey = "userId";
     private const string UserNameKey = "userName";
+    private const string SucursalActivaIdKey = "sucursalActivaId";
+    private const string SucursalActivaNombreKey = "sucursalActivaNombre";
+    private const string SucursalActivaSimboloKey = "sucursalActivaSimbolo";
 
     public async Task<AuthResponse?> LoginAsync(LoginRequest req)
     {
@@ -42,11 +45,36 @@ public class AuthService(HttpClient http, ILocalStorageService localStorage, Aut
         ((JwtAuthStateProvider)authProvider).NotifyUserAuthentication(auth.Token, auth.SimboloMoneda);
     }
 
-    public async Task<string> GetSimboloMonedaAsync() =>
-        await localStorage.GetItemAsync<string>(SimboloKey) is string s && !string.IsNullOrEmpty(s) ? s : "$";
+    public async Task SetSucursalActivaAsync(int id, string nombre, string simbolo)
+    {
+        await localStorage.SetItemAsync(SucursalActivaIdKey, id.ToString());
+        await localStorage.SetItemAsync(SucursalActivaNombreKey, nombre);
+        await localStorage.SetItemAsync(SucursalActivaSimboloKey, simbolo);
+        await localStorage.SetItemAsync(SimboloKey, simbolo);
+    }
+
+    public async Task<int?> GetSucursalActivaIdAsync()
+    {
+        var val = await localStorage.GetItemAsync<string>(SucursalActivaIdKey);
+        return int.TryParse(val, out var id) ? id : null;
+    }
+
+    public async Task<string> GetSucursalActivaNombreAsync() =>
+        await localStorage.GetItemAsync<string>(SucursalActivaNombreKey) ?? "";
+
+    public async Task<string> GetSimboloMonedaAsync()
+    {
+        var s = await localStorage.GetItemAsync<string>(SucursalActivaSimboloKey);
+        if (!string.IsNullOrEmpty(s)) return s;
+        s = await localStorage.GetItemAsync<string>(SimboloKey);
+        return !string.IsNullOrEmpty(s) ? s : "$";
+    }
 
     public async Task<string> GetRolAsync() =>
         await localStorage.GetItemAsync<string>(RolKey) ?? "Usuario";
+
+    public async Task<string> GetUserIdAsync() =>
+        await localStorage.GetItemAsync<string>(UserIdKey) ?? "0";
 
     public async Task LogoutAsync()
     {
@@ -55,6 +83,9 @@ public class AuthService(HttpClient http, ILocalStorageService localStorage, Aut
         await localStorage.RemoveItemAsync(RolKey);
         await localStorage.RemoveItemAsync(UserIdKey);
         await localStorage.RemoveItemAsync(UserNameKey);
+        await localStorage.RemoveItemAsync(SucursalActivaIdKey);
+        await localStorage.RemoveItemAsync(SucursalActivaNombreKey);
+        await localStorage.RemoveItemAsync(SucursalActivaSimboloKey);
         ((JwtAuthStateProvider)authProvider).NotifyUserLogout();
     }
 }

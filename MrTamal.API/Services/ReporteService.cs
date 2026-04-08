@@ -7,22 +7,24 @@ namespace MrTamal.API.Services;
 
 public class ReporteService(AppDbContext db)
 {
-    public async Task<ReporteResumen> GenerarAsync(ReporteRequest req, int usuarioId)
+    public async Task<ReporteResumen> GenerarAsync(ReporteRequest req, int usuarioId, int? sucursalIdOverride = null)
     {
         var (inicio, fin) = ObtenerRango(req);
-
         var inicioUtc = DateTime.SpecifyKind(inicio, DateTimeKind.Utc);
         var finUtc = DateTime.SpecifyKind(fin, DateTimeKind.Utc);
 
+        // Prioridad: override del header > sucursal del usuario > solo sus datos
         var usuario = await db.Usuarios.FindAsync(usuarioId);
-        var (verTodo, sucursalId) = ResolverVisibilidad(usuario);
+        var sucursalId = sucursalIdOverride ?? usuario?.SucursalId;
+        var esGlobal = sucursalId == null &&
+            (usuario?.Rol == Roles.Admin || usuario?.Rol == Roles.Gerente);
 
         IQueryable<Ingreso> qIng = db.Ingresos.Include(i => i.Catalogo)
             .Where(i => i.Fecha >= inicioUtc && i.Fecha <= finUtc);
         IQueryable<Egreso> qEgr = db.Egresos.Include(e => e.Catalogo)
             .Where(e => e.Fecha >= inicioUtc && e.Fecha <= finUtc);
 
-        if (!verTodo)
+        if (!esGlobal)
         {
             if (sucursalId.HasValue)
             {

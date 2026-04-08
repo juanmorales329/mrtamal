@@ -13,6 +13,18 @@ public class ApiService(HttpClient http, ILocalStorageService localStorage)
         var token = await localStorage.GetItemAsync<string>("authToken");
         if (!string.IsNullOrEmpty(token))
             http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Enviar sucursal activa como header
+        var sucursalId = await localStorage.GetItemAsync<string>("sucursalActivaId");
+        if (!string.IsNullOrEmpty(sucursalId))
+        {
+            http.DefaultRequestHeaders.Remove("X-Sucursal-Id");
+            http.DefaultRequestHeaders.Add("X-Sucursal-Id", sucursalId);
+        }
+        else
+        {
+            http.DefaultRequestHeaders.Remove("X-Sucursal-Id");
+        }
     }
 
     // Catalogos

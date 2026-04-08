@@ -1,10 +1,23 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using MrTamal.API.Data;
+using MrTamal.API.Services;
 using MrTamal.Shared.DTOs;
 using MrTamal.Shared.Models;
 
 namespace MrTamal.API.Endpoints;
+
+public static class MovimientoEndpoints
+{
+    // Obtiene la sucursal activa: primero del header X-Sucursal-Id, luego del usuario en BD
+    private static async Task<int?> GetSucursalActivaAsync(HttpContext ctx, AppDbContext db, int uid)
+    {
+        if (ctx.Request.Headers.TryGetValue("X-Sucursal-Id", out var val) &&
+            int.TryParse(val, out var hId) && hId > 0)
+            return hId;
+        var usuario = await db.Usuarios.FindAsync(uid);
+        return usuario?.SucursalId;
+    }
 
 public static class MovimientoEndpoints
 {
@@ -18,13 +31,12 @@ public static class MovimientoEndpoints
     {
         var group = app.MapGroup("/api/ingresos").WithTags("Ingresos").RequireAuthorization();
 
-        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal user, DateTime? desde, DateTime? hasta) =>
+        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal user, HttpContext ctx, DateTime? desde, DateTime? hasta) =>
         {
             var uid = GetUserId(user);
-            // Filtrar por sucursal activa del usuario
-            var usuario = await db.Usuarios.FindAsync(uid);
+            var sucursalId = await GetSucursalActivaAsync(ctx, db, uid);
             var query = db.Ingresos.Include(i => i.Catalogo).Include(i => i.Sucursal)
-                .Where(i => i.UsuarioId == uid || (usuario!.SucursalId.HasValue && i.SucursalId == usuario.SucursalId));
+                .Where(i => sucursalId.HasValue ? i.SucursalId == sucursalId : i.UsuarioId == uid);
             if (desde.HasValue) query = query.Where(i => i.Fecha >= Utc(desde.Value));
             if (hasta.HasValue) query = query.Where(i => i.Fecha <= Utc(hasta.Value));
             var lista = await query.OrderByDescending(i => i.Fecha).ToListAsync();
@@ -39,7 +51,7 @@ public static class MovimientoEndpoints
             return i is null ? Results.NotFound() : Results.Ok(ToDto(i));
         });
 
-        group.MapPost("/", async (CreateMovimientoRequest req, AppDbContext db, ClaimsPrincipal user) =>
+        group.MapPost("/", async (CreateMovimientoRequest req, AppDbContext db, ClaimsPrincipal user, HttpContext ctx) =>
         {
             if (req.CatalogoId <= 0) return Results.BadRequest("Debe seleccionar un tipo válido.");
             var catalogo = await db.Catalogos.FindAsync(req.CatalogoId);
@@ -47,25 +59,21 @@ public static class MovimientoEndpoints
 
             var uid = GetUserId(user);
             var fechaDia = Utc(req.Fecha.Date);
+            var sucursalId = await GetSucursalActivaAsync(ctx, db, uid);
 
-            // Validar duplicado: mismo catálogo, misma fecha, mismo usuario
             var duplicado = await db.Ingresos.AnyAsync(i =>
-                i.UsuarioId == uid &&
+                (sucursalId.HasValue ? i.SucursalId == sucursalId : i.UsuarioId == uid) &&
                 i.CatalogoId == req.CatalogoId &&
                 i.Fecha.Date == fechaDia.Date);
             if (duplicado)
                 return Results.Conflict($"Ya existe un ingreso de tipo '{catalogo.Descripcion}' para esa fecha.");
 
             var usuario = await db.Usuarios.Include(u => u.Sucursal).FirstAsync(u => u.Id == uid);
-
             var ingreso = new Ingreso
             {
-                Fecha = fechaDia,
-                CatalogoId = req.CatalogoId,
-                Cantidad = req.Cantidad,
-                Notas = req.Notas,
-                UsuarioId = uid,
-                SucursalId = usuario.SucursalId,
+                Fecha = fechaDia, CatalogoId = req.CatalogoId, Cantidad = req.Cantidad,
+                Notas = req.Notas, UsuarioId = uid,
+                SucursalId = sucursalId ?? usuario.SucursalId,
                 CreadoEn = DateTime.UtcNow
             };
             db.Ingresos.Add(ingreso);
@@ -106,12 +114,12 @@ public static class MovimientoEndpoints
     {
         var group = app.MapGroup("/api/egresos").WithTags("Egresos").RequireAuthorization();
 
-        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal user, DateTime? desde, DateTime? hasta) =>
+        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal user, HttpContext ctx, DateTime? desde, DateTime? hasta) =>
         {
             var uid = GetUserId(user);
-            var usuario = await db.Usuarios.FindAsync(uid);
+            var sucursalId = await GetSucursalActivaAsync(ctx, db, uid);
             var query = db.Egresos.Include(e => e.Catalogo).Include(e => e.Sucursal)
-                .Where(e => e.UsuarioId == uid || (usuario!.SucursalId.HasValue && e.SucursalId == usuario.SucursalId));
+                .Where(e => sucursalId.HasValue ? e.SucursalId == sucursalId : e.UsuarioId == uid);
             if (desde.HasValue) query = query.Where(e => e.Fecha >= Utc(desde.Value));
             if (hasta.HasValue) query = query.Where(e => e.Fecha <= Utc(hasta.Value));
             var lista = await query.OrderByDescending(e => e.Fecha).ToListAsync();
@@ -126,7 +134,7 @@ public static class MovimientoEndpoints
             return e is null ? Results.NotFound() : Results.Ok(ToEgresoDto(e));
         });
 
-        group.MapPost("/", async (CreateMovimientoRequest req, AppDbContext db, ClaimsPrincipal user) =>
+        group.MapPost("/", async (CreateMovimientoRequest req, AppDbContext db, ClaimsPrincipal user, HttpContext ctx) =>
         {
             if (req.CatalogoId <= 0) return Results.BadRequest("Debe seleccionar un tipo válido.");
             var catalogo = await db.Catalogos.FindAsync(req.CatalogoId);
@@ -134,25 +142,21 @@ public static class MovimientoEndpoints
 
             var uid = GetUserId(user);
             var fechaDia = Utc(req.Fecha.Date);
+            var sucursalId = await GetSucursalActivaAsync(ctx, db, uid);
 
-            // Validar duplicado: mismo catálogo, misma fecha, mismo usuario
             var duplicado = await db.Egresos.AnyAsync(e =>
-                e.UsuarioId == uid &&
+                (sucursalId.HasValue ? e.SucursalId == sucursalId : e.UsuarioId == uid) &&
                 e.CatalogoId == req.CatalogoId &&
                 e.Fecha.Date == fechaDia.Date);
             if (duplicado)
                 return Results.Conflict($"Ya existe un egreso de tipo '{catalogo.Descripcion}' para esa fecha.");
 
             var usuario = await db.Usuarios.Include(u => u.Sucursal).FirstAsync(u => u.Id == uid);
-
             var egreso = new Egreso
             {
-                Fecha = fechaDia,
-                CatalogoId = req.CatalogoId,
-                Cantidad = req.Cantidad,
-                Notas = req.Notas,
-                UsuarioId = uid,
-                SucursalId = usuario.SucursalId,
+                Fecha = fechaDia, CatalogoId = req.CatalogoId, Cantidad = req.Cantidad,
+                Notas = req.Notas, UsuarioId = uid,
+                SucursalId = sucursalId ?? usuario.SucursalId,
                 CreadoEn = DateTime.UtcNow
             };
             db.Egresos.Add(egreso);

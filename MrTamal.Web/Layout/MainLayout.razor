@@ -45,6 +45,17 @@
                         <div style="color:#FFD0A0;font-size:11px">@GetRol(authCtx.User)</div>
                     </div>
                 </div>
+                <!-- Sucursal activa -->
+                <button class="sidebar-sucursal-btn" @onclick="CambiarSucursal">
+                    <span style="font-size:1rem">🏪</span>
+                    <div style="flex:1;min-width:0">
+                        <div style="font-size:.7rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em">Sucursal activa</div>
+                        <div style="font-size:.82rem;color:white;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                            @(string.IsNullOrEmpty(sucursalNombre) ? "Sin seleccionar" : sucursalNombre)
+                        </div>
+                    </div>
+                    <span style="color:rgba(255,255,255,.4);font-size:.75rem">⇄</span>
+                </button>
             </Authorized>
         </AuthorizeView>
 
@@ -71,9 +82,21 @@
 
 @code {
     private bool menuAbierto = false;
+    private string sucursalNombre = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        sucursalNombre = await AuthSvc.GetSucursalActivaNombreAsync();
+    }
 
     private void ToggleMenu() => menuAbierto = !menuAbierto;
     private void CerrarMenu() => menuAbierto = false;
+
+    private void CambiarSucursal()
+    {
+        CerrarMenu();
+        Nav.NavigateTo("seleccionar-sucursal");
+    }
 
     private async Task Logout()
     {

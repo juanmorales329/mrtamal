@@ -3,56 +3,51 @@
 @inject ApiService Api
 @inject AuthService AuthSvc
 @inject NavigationManager Nav
-@inject Blazored.LocalStorage.ILocalStorageService localStorage
 
 <div class="container d-flex justify-content-center align-items-center" style="min-height:100vh;background:#f8f9fa">
-    <div class="card shadow-lg" style="width:420px;border-radius:16px;overflow:hidden">
+    <div class="card shadow-lg" style="width:440px;border-radius:16px;overflow:hidden">
         <div style="background:linear-gradient(135deg,#FF6D00,#FF8F00);padding:24px;text-align:center">
             <div style="font-size:2.5rem">🏪</div>
-            <h5 class="text-white fw-bold mb-0">Selecciona tu Sucursal</h5>
-            <small class="text-white" style="opacity:.85">¿Desde qué sucursal estás trabajando hoy?</small>
+            <h5 class="text-white fw-bold mb-0">¿Qué sucursal vas a operar?</h5>
+            <small class="text-white" style="opacity:.85">Selecciona el negocio para esta sesión</small>
         </div>
         <div class="card-body p-4">
             @if (cargando)
             {
                 <div class="text-center py-4 text-muted">Cargando sucursales...</div>
             }
-            else if (sucursales is null || !sucursales.Any())
+            else if (!sucursales.Any())
             {
-                <div class="alert alert-warning">No hay sucursales registradas. Contacta al administrador.</div>
-                <button class="btn btn-secondary w-100" @onclick="Continuar">Continuar sin sucursal</button>
+                <div class="alert alert-warning">No hay sucursales registradas.</div>
+                <button class="btn btn-secondary w-100" @onclick="() => Confirmar(null)">Continuar sin sucursal</button>
             }
             else
             {
-                <p class="text-muted small mb-3">Hola <strong>@nombre</strong>, selecciona la sucursal donde trabajarás:</p>
                 <div class="d-flex flex-column gap-2 mb-4">
                     @foreach (var s in sucursales)
                     {
                         var sel = s;
                         <button class="btn text-start p-3 @(sucursalSeleccionada == sel.Id ? "btn-warning" : "btn-outline-secondary")"
-                                style="border-radius:10px;transition:all .2s"
+                                style="border-radius:10px"
                                 @onclick="() => sucursalSeleccionada = sel.Id">
                             <div class="d-flex align-items-center gap-3">
-                                <span style="font-size:1.5rem">🏪</span>
+                                <span style="font-size:1.4rem">🏪</span>
                                 <div>
                                     <div class="fw-bold">@sel.Nombre</div>
-                                    <small class="text-muted">@sel.Pais · @sel.SimboloMoneda</small>
+                                    <small class="text-muted">@sel.Pais &nbsp;·&nbsp; @sel.SimboloMoneda</small>
                                 </div>
                                 @if (sucursalSeleccionada == sel.Id)
                                 {
-                                    <span class="ms-auto text-warning fw-bold">✓</span>
+                                    <span class="ms-auto fw-bold text-warning fs-5">✓</span>
                                 }
                             </div>
                         </button>
                     }
                 </div>
-                @if (!string.IsNullOrEmpty(error))
-                {
-                    <div class="alert alert-danger py-2 small">@error</div>
-                }
                 <button class="btn w-100 fw-bold text-white" style="background:#FF6D00;border-radius:8px"
-                        @onclick="Confirmar" disabled="@(sucursalSeleccionada == 0 || guardando)">
-                    @(guardando ? "⏳ Guardando..." : "✓ Confirmar y Entrar")
+                        @onclick="() => Confirmar(sucursalSeleccionada > 0 ? sucursalSeleccionada : null)"
+                        disabled="@(sucursalSeleccionada == 0)">
+                    ✓ Entrar
                 </button>
             }
         </div>
@@ -60,44 +55,29 @@
 </div>
 
 @code {
-    private List<SucursalDto>? sucursales;
+    private List<SucursalDto> sucursales = new();
     private int sucursalSeleccionada;
-    private bool cargando = true, guardando;
-    private string? error;
-    private string nombre = "";
-    private int usuarioId;
+    private bool cargando = true;
 
     protected override async Task OnInitializedAsync()
     {
-        nombre = await localStorage.GetItemAsync<string>("userName") ?? "";
-        var idStr = await localStorage.GetItemAsync<string>("userId");
-        int.TryParse(idStr, out usuarioId);
+        var lista = await Api.GetSucursalesAsync();
+        sucursales = lista?.Where(s => s.Activa).ToList() ?? new();
 
-        sucursales = await Api.GetSucursalesAsync();
-        sucursales = sucursales?.Where(s => s.Activa).ToList();
+        // Si solo hay una, seleccionarla automáticamente
+        if (sucursales.Count == 1)
+            sucursalSeleccionada = sucursales[0].Id;
+
         cargando = false;
     }
 
-    private async Task Confirmar()
+    private async Task Confirmar(int? id)
     {
-        if (sucursalSeleccionada == 0) return;
-        guardando = true;
-        error = null;
-        try
+        if (id.HasValue)
         {
-            var sucursal = sucursales!.First(s => s.Id == sucursalSeleccionada);
-            // Asignar sucursal al usuario
-            await Api.AsignarSucursalAsync(usuarioId, sucursalSeleccionada);
-            // Guardar símbolo de moneda actualizado
-            await localStorage.SetItemAsync("simboloMoneda", sucursal.SimboloMoneda);
-            Nav.NavigateTo("", replace: true);
+            var s = sucursales.First(x => x.Id == id.Value);
+            await AuthSvc.SetSucursalActivaAsync(s.Id, s.Nombre, s.SimboloMoneda);
         }
-        catch
-        {
-            error = "Error al asignar la sucursal. Intenta de nuevo.";
-            guardando = false;
-        }
+        Nav.NavigateTo("", replace: true);
     }
-
-    private void Continuar() => Nav.NavigateTo("", replace: true);
 }

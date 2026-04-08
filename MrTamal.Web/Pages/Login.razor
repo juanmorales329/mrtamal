@@ -94,11 +94,8 @@
         }
         else
         {
-            // Si no tiene sucursal asignada, pedir que seleccione
-            if (!result.SucursalId.HasValue)
-                Nav.NavigateTo("seleccionar-sucursal");
-            else
-                Nav.NavigateTo("");
+            // Siempre pedir selección de sucursal al iniciar sesión
+            Nav.NavigateTo("seleccionar-sucursal");
         }
     }
 
