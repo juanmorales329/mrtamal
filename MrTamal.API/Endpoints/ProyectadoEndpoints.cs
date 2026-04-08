@@ -185,7 +185,7 @@ public static class ProyectadoEndpoints
         foreach (var (num, periodo, mesInicio, mesFin) in definiciones)
         {
             var ini = DateTime.SpecifyKind(new DateTime(anio, mesInicio, 1), DateTimeKind.Utc);
-            var finC = DateTime.SpecifyKind(new DateTime(anio, mesFin + 1, 1), DateTimeKind.Utc).AddTicks(-1);
+            var finC = DateTime.SpecifyKind(new DateTime(anio, mesInicio, 1).AddMonths(mesFin - mesInicio + 1), DateTimeKind.Utc).AddTicks(-1);
             IQueryable<Ingreso> qC = db.Ingresos.Where(i => i.Fecha >= ini && i.Fecha <= finC);
             if (!esGlobal)
             {
