@@ -91,6 +91,12 @@
                 </div>
             }
 
+            <!-- Filtro por tipo/código -->
+            <div class="col-md-2">
+                <label class="form-label fw-bold">Filtrar tipo</label>
+                <input type="text" class="form-control" @bind="filtroCodigo" placeholder="Ej: Cash, 1001..." />
+            </div>
+
             <div class="col-md-2 d-flex gap-2 flex-wrap">
                 <button class="btn btn-primary" @onclick="Generar" disabled="@cargando">
                     @(cargando ? "⏳" : "🔍 Generar")
@@ -102,6 +108,9 @@
                     </button>
                     <button class="btn btn-success" @onclick="DescargarExcel" disabled="@descargandoExcel">
                         @(descargandoExcel ? "⏳" : "📊 Excel")
+                    </button>
+                    <button class="btn btn-info text-white" @onclick="CompartirImagen" disabled="@generandoImagen">
+                        @(generandoImagen ? "⏳" : "🖼 Imagen")
                     </button>
                 }
             </div>
@@ -119,6 +128,7 @@
 
 @if (resumen is not null)
 {
+    <div id="reporte-captura">
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="card border-0 shadow-sm" style="border-left:5px solid #4CAF50 !important">
@@ -251,10 +261,11 @@
     private int mesSeleccionado = DateTime.Now.Month;
     private int anio = DateTime.Now.Year;
     private int anioComparacion = DateTime.Now.Year - 1;
-    private bool cargando, descargando, descargandoExcel;
+    private bool cargando, descargando, descargandoExcel, generandoImagen;
     private ReporteResumen? resumen;
     private string simbolo = "$";
     private string? periodoTexto;
+    private string? filtroCodigo;
 
     protected override async Task OnInitializedAsync()
     {
@@ -338,6 +349,17 @@
         descargandoExcel = false;
     }
 
+    private async Task CompartirImagen()
+    {
+        generandoImagen = true;
+        try
+        {
+            await JS.InvokeVoidAsync("captureAndDownload", "reporte-captura", $"reporte_{DateTime.Now:yyyyMMdd}.png");
+        }
+        catch { }
+        generandoImagen = false;
+    }
+
     private ReporteRequest BuildRequest()
     {
         return tipoReporte switch
@@ -345,18 +367,18 @@
             0 => new(TipoReporte.Diario,
                     DateTime.SpecifyKind(fechaDiaria.Date, DateTimeKind.Utc),
                     DateTime.SpecifyKind(fechaDiaria.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc),
-                    null, null, null),
+                    null, null, null, filtroCodigo),
             1 => new(TipoReporte.Semanal,
                     DateTime.SpecifyKind(semanaDesde.Date, DateTimeKind.Utc),
                     DateTime.SpecifyKind(semanaHasta.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc),
-                    null, null, null),
+                    null, null, null, filtroCodigo),
             2 => new(TipoReporte.Mensual,
                     DateTime.SpecifyKind(new DateTime(anio, mesSeleccionado, 1), DateTimeKind.Utc),
                     DateTime.SpecifyKind(new DateTime(anio, mesSeleccionado, 1).AddMonths(1).AddTicks(-1), DateTimeKind.Utc),
-                    null, null, null),
-            3 => new(TipoReporte.ComparacionAnual, null, null, anio, null, anioComparacion),
-            4 => new(TipoReporte.ComparacionMensual, null, null, anio, null, null),
-            _ => new(TipoReporte.Mensual, null, null, null, null, null)
+                    null, null, null, filtroCodigo),
+            3 => new(TipoReporte.ComparacionAnual, null, null, anio, null, anioComparacion, filtroCodigo),
+            4 => new(TipoReporte.ComparacionMensual, null, null, anio, null, null, filtroCodigo),
+            _ => new(TipoReporte.Mensual, null, null, null, null, null, filtroCodigo)
         };
     }
 }

@@ -6,7 +6,8 @@ public record ReporteRequest(
     DateTime? FechaFin,
     int? Anio,
     int? Mes,
-    int? AnioComparacion
+    int? AnioComparacion,
+    string? FiltroCodigo = null  // filtrar por código de catálogo ej: "1001", "Cash"
 );
 
 public enum TipoReporte

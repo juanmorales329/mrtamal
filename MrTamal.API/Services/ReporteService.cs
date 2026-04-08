@@ -46,6 +46,14 @@ public class ReporteService(AppDbContext db)
             .Select(e => new ReporteDetalle(e.Fecha, e.Catalogo!.Codigo, e.Catalogo.Descripcion, e.Cantidad, e.Notas))
             .ToListAsync();
 
+        // Aplicar filtro de código si viene
+        if (!string.IsNullOrEmpty(req.FiltroCodigo))
+        {
+            var codigo = req.FiltroCodigo.Trim().ToLower();
+            ingresos = ingresos.Where(i => i.Codigo.ToLower().Contains(codigo) || i.Descripcion.ToLower().Contains(codigo)).ToList();
+            egresos = egresos.Where(e => e.Codigo.ToLower().Contains(codigo) || e.Descripcion.ToLower().Contains(codigo)).ToList();
+        }
+
         List<ReporteComparacion>? comparaciones = null;
 
         if (req.Tipo == TipoReporte.ComparacionAnual && req.Anio.HasValue && req.AnioComparacion.HasValue)
