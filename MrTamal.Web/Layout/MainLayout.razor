@@ -27,6 +27,43 @@
         <div class="sidebar-overlay" @onclick="CerrarMenu"></div>
     }
 
+    <!-- Modal alerta días sin registrar (aparece al iniciar sesión) -->
+    @if (mostrarAlertaDias)
+    {
+        var alertColor = diasSinRegistrar >= 7 ? "#C62828" : diasSinRegistrar >= 3 ? "#E65100" : "#F57F17";
+        var alertBg = diasSinRegistrar >= 7 ? "#FFEBEE" : diasSinRegistrar >= 3 ? "#FFF3E0" : "#FFFDE7";
+        var emoji = diasSinRegistrar >= 7 ? "🚨" : "⚠️";
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:3000;display:flex;align-items:center;justify-content:center">
+            <div style="background:white;border-radius:16px;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.25);overflow:hidden;animation:slideIn .3s ease">
+                <div style="background:@alertColor;padding:16px 20px;display:flex;align-items:center;gap:12px">
+                    <span style="font-size:2rem">@emoji</span>
+                    <div>
+                        <div style="color:white;font-weight:800;font-size:1.1rem">
+                            @(diasSinRegistrar == 1 ? "1 día sin registrar" : $"{diasSinRegistrar} días sin registrar")
+                        </div>
+                        <div style="color:rgba(255,255,255,.85);font-size:.82rem">Ingresos pendientes de actualizar</div>
+                    </div>
+                </div>
+                <div style="padding:20px;background:@alertBg">
+                    <p style="margin:0 0 8px;font-size:.92rem;color:#333">
+                        Último registro: <strong>@ultimaFechaTexto</strong>
+                    </p>
+                    <p style="margin:0;font-size:.85rem;color:#666">
+                        Tienes ingresos sin registrar. Actualiza los datos para mantener tus reportes al día.
+                    </p>
+                </div>
+                <div style="padding:16px 20px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #eee">
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="CerrarAlertaDias">
+                        Recordar después
+                    </button>
+                    <a href="/ingresos" class="btn btn-sm text-white fw-bold" style="background:@alertColor;border-radius:6px" @onclick="CerrarAlertaDias">
+                        📝 Registrar ahora
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+
     <!-- Aviso de registros pendientes -->
     @if (mostrarAviso)
     {
@@ -118,10 +155,46 @@
     private string fechaAvisoTexto = "";
     private const string AvisoKey = "avisoRegistroFecha";
 
+    // Alerta días sin registrar
+    private bool mostrarAlertaDias = false;
+    private int diasSinRegistrar = 0;
+    private string ultimaFechaTexto = "";
+    private const string AlertaDiasKey = "alertaDiasSesion";
+
     protected override async Task OnInitializedAsync()
     {
         sucursalNombre = await AuthSvc.GetSucursalActivaNombreAsync();
         await VerificarAvisoPendiente();
+        await VerificarDiasSinRegistrar();
+    }
+
+    private async Task VerificarDiasSinRegistrar()
+    {
+        try
+        {
+            // Solo mostrar una vez por sesión
+            var sesionKey = await localStorage.GetItemAsync<string>(AlertaDiasKey);
+            var hoy = DateTime.Today.ToString("yyyy-MM-dd");
+            if (sesionKey == hoy) return;
+
+            var ultima = await Api.GetUltimaFechaIngresoAsync();
+            if (!ultima.HasValue) return;
+
+            var dias = (DateTime.Today.AddDays(-1) - ultima.Value.Date).Days;
+            if (dias >= 1)
+            {
+                diasSinRegistrar = dias;
+                ultimaFechaTexto = ultima.Value.ToString("dddd dd/MM/yyyy");
+                mostrarAlertaDias = true;
+            }
+        }
+        catch { }
+    }
+
+    private async Task CerrarAlertaDias()
+    {
+        mostrarAlertaDias = false;
+        await localStorage.SetItemAsync(AlertaDiasKey, DateTime.Today.ToString("yyyy-MM-dd"));
     }
 
     private async Task VerificarAvisoPendiente()
