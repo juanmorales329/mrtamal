@@ -1,0 +1,35 @@
+{
+  "name": "MrTamal Finanzas",
+  "short_name": "MrTamal",
+  "description": "Sistema de control financiero para tu negocio",
+  "start_url": "/mrtamal/",
+  "scope": "/mrtamal/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#FF6D00",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "categories": ["finance", "business", "productivity"]
+}
