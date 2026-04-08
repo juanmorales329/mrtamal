@@ -195,21 +195,19 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
 
 /* ===== MAIN CONTENT ===== */
 .main-content {
+    margin-left: var(--sidebar-width);
     flex: 1;
     min-height: 100vh;
     background: #f5f5f5;
     min-width: 0;
     overflow-x: hidden;
-    margin-left: 0;
-    width: 100%;
+    width: calc(100% - var(--sidebar-width));
 }
 
 .content-area {
     padding: 24px;
     padding-top: 16px;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -234,7 +232,6 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
         padding-top: var(--navbar-height);
         width: 100%;
     }
-
     .content-area {
         padding: 16px;
     }
