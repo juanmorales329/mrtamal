@@ -413,7 +413,27 @@ else if (sinMeta)
                 await RenderGrafica();
             }
         }
-        else sinMeta = true;
+        else
+        {
+            // Si no hay meta para el año actual, intentar el año anterior automáticamente
+            if (anioSeleccionado == DateTime.Now.Year)
+            {
+                anioSeleccionado = DateTime.Now.Year - 1;
+                var resp2 = await Http.GetAsync($"https://mrtamal.onrender.com/api/proyectado/{anioSeleccionado}");
+                if (resp2.IsSuccessStatusCode)
+                {
+                    resumen = await resp2.Content.ReadFromJsonAsync<ResumenProyectado>();
+                    if (resumen is not null)
+                    {
+                        formMeta = resumen.MetaAnual;
+                        await Task.Delay(150);
+                        await RenderGrafica();
+                        return;
+                    }
+                }
+            }
+            sinMeta = true;
+        }
     }
 
     private async Task GuardarMeta()

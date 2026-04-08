@@ -175,14 +175,17 @@ else
         var ayer = hoy.AddDays(-1);
 
         // Cargar en paralelo
-        var taskMes = Api.GetReporteAsync(new(TipoReporte.Mensual, null, null, null, null, null));
+        var taskMes = Api.GetReporteAsync(new(TipoReporte.Mensual,
+            new DateTime(hoy.Year, hoy.Month, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(hoy.Year, hoy.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(1).AddMilliseconds(-1),
+            hoy.Year, hoy.Month, null));
         var taskHoy = Api.GetReporteAsync(new(TipoReporte.Diario,
-            DateTime.SpecifyKind(hoy, DateTimeKind.Utc),
-            DateTime.SpecifyKind(hoy.AddDays(1).AddTicks(-1), DateTimeKind.Utc),
+            new DateTime(hoy.Year, hoy.Month, hoy.Day, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(hoy.Year, hoy.Month, hoy.Day, 23, 59, 59, 999, DateTimeKind.Utc),
             null, null, null));
         var taskAyer = Api.GetReporteAsync(new(TipoReporte.Diario,
-            DateTime.SpecifyKind(ayer, DateTimeKind.Utc),
-            DateTime.SpecifyKind(ayer.AddDays(1).AddTicks(-1), DateTimeKind.Utc),
+            new DateTime(ayer.Year, ayer.Month, ayer.Day, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(ayer.Year, ayer.Month, ayer.Day, 23, 59, 59, 999, DateTimeKind.Utc),
             null, null, null));
 
         await Task.WhenAll(taskMes, taskHoy, taskAyer);
@@ -198,16 +201,22 @@ else
         {
             var token = await localStorage.GetItemAsync<string>("authToken");
             var sucursalId = await localStorage.GetItemAsync<string>("sucursalActivaId");
-            using var req = new HttpRequestMessage(HttpMethod.Get,
-                $"https://mrtamal.onrender.com/api/proyectado/{hoy.Year}");
-            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token ?? "");
-            if (!string.IsNullOrEmpty(sucursalId))
-                req.Headers.Add("X-Sucursal-Id", sucursalId);
-            var resp = await Http.SendAsync(req);
-            if (resp.IsSuccessStatusCode)
+
+            // Intentar año actual, si no hay meta intentar año anterior
+            foreach (var anio in new[] { hoy.Year, hoy.Year - 1 })
             {
-                var proy = await resp.Content.ReadFromJsonAsync<ResumenProyectado>();
-                metaDiaria = proy?.MetaDiaria ?? 0;
+                using var req = new HttpRequestMessage(HttpMethod.Get,
+                    $"https://mrtamal.onrender.com/api/proyectado/{anio}");
+                req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token ?? "");
+                if (!string.IsNullOrEmpty(sucursalId))
+                    req.Headers.Add("X-Sucursal-Id", sucursalId);
+                var resp = await Http.SendAsync(req);
+                if (resp.IsSuccessStatusCode)
+                {
+                    var proy = await resp.Content.ReadFromJsonAsync<ResumenProyectado>();
+                    metaDiaria = proy?.MetaDiaria ?? 0;
+                    break;
+                }
             }
         }
         catch { }
