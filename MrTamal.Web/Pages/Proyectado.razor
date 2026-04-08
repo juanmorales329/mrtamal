@@ -59,7 +59,7 @@
             </button>
         }
         <select class="form-select form-select-sm" style="width:100px;border-radius:8px" @bind="anioSeleccionado" @bind:after="Cargar">
-            @for (int a = DateTime.Now.Year + 1; a >= DateTime.Now.Year - 3; a--)
+            @for (int a = DateTime.Now.Year; a >= DateTime.Now.Year - 5; a--)
             {
                 <option value="@a">@a</option>
             }

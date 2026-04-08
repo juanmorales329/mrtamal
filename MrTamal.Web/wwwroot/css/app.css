@@ -201,15 +201,13 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
     background: #f5f5f5;
     min-width: 0;
     overflow-x: hidden;
-    width: calc(100% - var(--sidebar-width));
 }
 
 .content-area {
     padding: 24px;
     padding-top: 16px;
-    box-sizing: border-box;
-    max-width: 100%;
     width: 100%;
+    box-sizing: border-box;
 }
 
 /* ===== RESPONSIVE ===== */
