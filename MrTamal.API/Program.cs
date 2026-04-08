@@ -71,6 +71,12 @@ using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         db.Database.Migrate();
+
+        // Asignar SucursalId=1 a registros sin sucursal (datos históricos)
+        await db.Database.ExecuteSqlRawAsync(
+            "UPDATE \"Ingresos\" SET \"SucursalId\" = 1 WHERE \"SucursalId\" IS NULL");
+        await db.Database.ExecuteSqlRawAsync(
+            "UPDATE \"Egresos\" SET \"SucursalId\" = 1 WHERE \"SucursalId\" IS NULL");
     }
     catch (Exception ex)
     {
