@@ -14,11 +14,10 @@ public static class ProyectadoEndpoints
         var group = app.MapGroup("/api/proyectado").WithTags("Proyectado").RequireAuthorization();
 
         // Obtener o calcular resumen proyectado
-        group.MapGet("/{anio:int}", async (int anio, AppDbContext db, ClaimsPrincipal user, HttpContext ctx) =>
+        group.MapGet("/{anio:int}", async (int anio, AppDbContext db, ClaimsPrincipal user) =>
         {
             var uid = GetUserId(user);
 
-            // Buscar meta sin filtro de sucursal - cualquier meta del año
             var meta = await db.MetasAnuales
                 .FirstOrDefaultAsync(m => m.Anio == anio);
 
@@ -28,11 +27,7 @@ public static class ProyectadoEndpoints
                 .Where(d => d.Fecha.Year == anio)
                 .ToListAsync();
 
-            // Leer sucursal activa del header (igual que movimientos)
-            int? sucursalIdOverride = ctx.Request.Headers.TryGetValue("X-Sucursal-Id", out var val) &&
-                int.TryParse(val, out var hId) && hId > 0 ? hId : null;
-
-            var resumen = CalcularResumen(meta, diasNoLab, db, uid, anio, sucursalIdOverride);
+            var resumen = CalcularResumen(meta, diasNoLab, db, uid, anio);
             return Results.Ok(await resumen);
         });
 
@@ -108,7 +103,7 @@ public static class ProyectadoEndpoints
         });
 
         // Exportar PDF del proyectado
-        group.MapGet("/{anio:int}/pdf", async (int anio, AppDbContext db, ClaimsPrincipal user, HttpContext ctx, PdfService pdfSvc) =>
+        group.MapGet("/{anio:int}/pdf", async (int anio, AppDbContext db, ClaimsPrincipal user, PdfService pdfSvc) =>
         {
             var uid = GetUserId(user);
             var meta = await db.MetasAnuales.FirstOrDefaultAsync(m => m.Anio == anio);
@@ -116,16 +111,14 @@ public static class ProyectadoEndpoints
             var anoIni = DateTime.SpecifyKind(new DateTime(anio, 1, 1), DateTimeKind.Utc);
             var anoFin = DateTime.SpecifyKind(new DateTime(anio, 12, 31, 23, 59, 59), DateTimeKind.Utc);
             var diasNoLab = await db.DiasNoLaborables.Where(d => d.Fecha >= anoIni && d.Fecha <= anoFin).ToListAsync();
-            int? sucursalIdOverride = ctx.Request.Headers.TryGetValue("X-Sucursal-Id", out var val) &&
-                int.TryParse(val, out var hId) && hId > 0 ? hId : null;
-            var resumen = await CalcularResumen(meta, diasNoLab, db, uid, anio, sucursalIdOverride);
+            var resumen = await CalcularResumen(meta, diasNoLab, db, uid, anio);
             var sucursal = await db.Usuarios.Include(u => u.Sucursal).Where(u => u.Id == uid).Select(u => u.Sucursal).FirstOrDefaultAsync();
             var simbolo = sucursal?.SimboloMoneda ?? "$";
             var pdf = pdfSvc.GenerarProyectadoPdf(resumen, simbolo);
             return Results.File(pdf, "application/pdf", $"proyectado_{anio}.pdf");
         });
 
-        group.MapGet("/{anio:int}/excel", async (int anio, AppDbContext db, ClaimsPrincipal user, HttpContext ctx, PdfService pdfSvc) =>
+        group.MapGet("/{anio:int}/excel", async (int anio, AppDbContext db, ClaimsPrincipal user, PdfService pdfSvc) =>
         {
             var uid = GetUserId(user);
             var meta = await db.MetasAnuales.FirstOrDefaultAsync(m => m.Anio == anio);
@@ -133,9 +126,7 @@ public static class ProyectadoEndpoints
             var anoIni = DateTime.SpecifyKind(new DateTime(anio, 1, 1), DateTimeKind.Utc);
             var anoFin = DateTime.SpecifyKind(new DateTime(anio, 12, 31, 23, 59, 59), DateTimeKind.Utc);
             var diasNoLab = await db.DiasNoLaborables.Where(d => d.Fecha >= anoIni && d.Fecha <= anoFin).ToListAsync();
-            int? sucursalIdOverride = ctx.Request.Headers.TryGetValue("X-Sucursal-Id", out var val2) &&
-                int.TryParse(val2, out var hId2) && hId2 > 0 ? hId2 : null;
-            var resumen = await CalcularResumen(meta, diasNoLab, db, uid, anio, sucursalIdOverride);
+            var resumen = await CalcularResumen(meta, diasNoLab, db, uid, anio);
             var sucursal = await db.Usuarios.Include(u => u.Sucursal).Where(u => u.Id == uid).Select(u => u.Sucursal).FirstOrDefaultAsync();
             var simbolo = sucursal?.SimboloMoneda ?? "$";
             var excel = pdfSvc.GenerarProyectadoExcel(resumen, simbolo);
@@ -144,11 +135,10 @@ public static class ProyectadoEndpoints
     }
 
     private static async Task<ResumenProyectado> CalcularResumen(
-        MetaAnual meta, List<DiaNolaboral> diasNoLab, AppDbContext db, int uid, int anio, int? sucursalIdOverride = null)
+        MetaAnual meta, List<DiaNolaboral> diasNoLab, AppDbContext db, int uid, int anio)
     {
         var fechasNoLab = diasNoLab.Select(d => d.Fecha.Date).ToHashSet();
 
-        // Calcular días laborables del año
         int diasLaborablesAnio = 0;
         var inicio = new DateTime(anio, 1, 1);
         var fin = new DateTime(anio, 12, 31);
@@ -161,11 +151,9 @@ public static class ProyectadoEndpoints
 
         var metaDiaria = diasLaborablesAnio > 0 ? meta.MetaVentas / diasLaborablesAnio : 0;
 
-        // Ventas reales del año - visibilidad según rol
         var usuario = await db.Usuarios.FindAsync(uid);
         var esGlobal = (usuario?.Rol == Roles.Admin || usuario?.Rol == Roles.Gerente) && !usuario.SucursalId.HasValue;
-        // Prioridad: override del header > sucursal del usuario en BD
-        var sucursalId = sucursalIdOverride ?? usuario?.SucursalId;
+        var sucursalId = usuario?.SucursalId;
 
         // Usar rango UTC en lugar de .Year para compatibilidad con PostgreSQL
         var anoInicio = DateTime.SpecifyKind(new DateTime(anio, 1, 1), DateTimeKind.Utc);
