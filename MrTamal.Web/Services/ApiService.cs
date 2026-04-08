@@ -67,6 +67,17 @@ public class ApiService(HttpClient http, ILocalStorageService localStorage)
     { await EnsureTokenAsync(); return await DeleteAsync($"/api/catalogos/{id}"); }
 
     // Ingresos
+    public async Task<DateTime?> GetUltimaFechaIngresoAsync()
+    {
+        await EnsureTokenAsync();
+        try
+        {
+            var r = await http.GetFromJsonAsync<UltimaFechaDto>("/api/ingresos/ultima-fecha");
+            return r?.Fecha;
+        }
+        catch { return null; }
+    }
+
     public async Task<List<MovimientoDto>?> GetIngresosAsync(DateTime? desde = null, DateTime? hasta = null)
     { await EnsureTokenAsync(); return await http.GetFromJsonAsync<List<MovimientoDto>>(BuildUrl("/api/ingresos", desde, hasta)); }
 
@@ -239,4 +250,5 @@ public class ApiService(HttpClient http, ILocalStorageService localStorage)
     }
 
     private class SiguienteCodigoDto { public string Codigo { get; set; } = ""; }
+    private class UltimaFechaDto { public DateTime? Fecha { get; set; } }
 }

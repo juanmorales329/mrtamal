@@ -25,6 +25,26 @@
 }
 else
 {
+    <!-- Alerta días sin actualizar -->
+    @if (diasSinActualizar > 0)
+    {
+        var alertColor = diasSinActualizar >= 7 ? "#C62828" : diasSinActualizar >= 3 ? "#E65100" : "#F57F17";
+        var alertBg = diasSinActualizar >= 7 ? "#FFEBEE" : diasSinActualizar >= 3 ? "#FFF3E0" : "#FFFDE7";
+        var emoji = diasSinActualizar >= 7 ? "🚨" : diasSinActualizar >= 3 ? "⚠️" : "📋";
+        <div class="mb-4 d-flex align-items-center gap-3" style="background:@alertBg;border-left:4px solid @alertColor;border-radius:10px;padding:.9rem 1.1rem">
+            <span style="font-size:1.6rem">@emoji</span>
+            <div>
+                <div class="fw-bold" style="color:@alertColor">
+                    @(diasSinActualizar == 1 ? "1 día sin registrar ingresos" : $"{diasSinActualizar} días sin registrar ingresos")
+                </div>
+                <div style="font-size:.83rem;color:#555;margin-top:2px">
+                    Último registro: <strong>@ultimaFechaIngreso!.Value.ToString("dddd dd/MM/yyyy")</strong>
+                    — <a href="/ingresos" style="color:@alertColor;font-weight:600">Registrar ahora →</a>
+                </div>
+            </div>
+        </div>
+    }
+
     <!-- Alerta meta diaria -->
     @if (metaDiaria > 0 && ingresosHoy < metaDiaria * 0.7m)
     {
@@ -166,6 +186,8 @@ else
     private string simbolo = "$";
     private decimal ingresosHoy, egresosHoy, ingresosAyer, egresosAyer, metaDiaria;
     private ReporteResumen? resumenMes;
+    private DateTime? ultimaFechaIngreso;
+    private int diasSinActualizar;
 
     protected override async Task OnInitializedAsync()
     {
@@ -187,14 +209,19 @@ else
             new DateTime(ayer.Year, ayer.Month, ayer.Day, 0, 0, 0, DateTimeKind.Utc),
             new DateTime(ayer.Year, ayer.Month, ayer.Day, 23, 59, 59, 999, DateTimeKind.Utc),
             null, null, null));
+        var taskUltima = Api.GetUltimaFechaIngresoAsync();
 
-        await Task.WhenAll(taskMes, taskHoy, taskAyer);
+        await Task.WhenAll(taskMes, taskHoy, taskAyer, taskUltima);
 
         resumenMes = taskMes.Result;
         ingresosHoy = taskHoy.Result?.TotalIngresos ?? 0;
         egresosHoy = taskHoy.Result?.TotalEgresos ?? 0;
         ingresosAyer = taskAyer.Result?.TotalIngresos ?? 0;
         egresosAyer = taskAyer.Result?.TotalEgresos ?? 0;
+        ultimaFechaIngreso = taskUltima.Result?.Date;
+
+        if (ultimaFechaIngreso.HasValue)
+            diasSinActualizar = (hoy.AddDays(-1) - ultimaFechaIngreso.Value.Date).Days;
 
         // Obtener meta diaria del proyectado
         try

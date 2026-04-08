@@ -29,6 +29,15 @@ public static class MovimientoEndpoints
     {
         var group = app.MapGroup("/api/ingresos").WithTags("Ingresos").RequireAuthorization();
 
+        group.MapGet("/ultima-fecha", async (AppDbContext db, ClaimsPrincipal user, HttpContext ctx) =>
+        {
+            var uid = GetUserId(user);
+            var sucursalId = await GetSucursalActivaAsync(ctx, db, uid);
+            var query = db.Ingresos.Where(i => sucursalId.HasValue ? i.SucursalId == sucursalId : i.UsuarioId == uid);
+            var ultima = await query.MaxAsync(i => (DateTime?)i.Fecha);
+            return Results.Ok(new { fecha = ultima });
+        });
+
         group.MapGet("/", async (AppDbContext db, ClaimsPrincipal user, HttpContext ctx, DateTime? desde, DateTime? hasta) =>
         {
             var uid = GetUserId(user);
