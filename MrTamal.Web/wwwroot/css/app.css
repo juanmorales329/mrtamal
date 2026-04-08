@@ -15,7 +15,6 @@
 html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
 
 /* ===== LAYOUT ===== */
-/* El sidebar es fixed, el main-content usa margin-left para compensar */
 .main-layout {
     min-height: 100vh;
     width: 100%;
