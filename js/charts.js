@@ -73,3 +73,13 @@ function downloadFile(base64, filename, mimeType) {
     link.download = filename;
     link.click();
 }
+
+async function captureAndDownload(elementId, filename) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const canvas = await html2canvas(el, { backgroundColor: '#ffffff', scale: 2 });
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = filename;
+    link.click();
+}
