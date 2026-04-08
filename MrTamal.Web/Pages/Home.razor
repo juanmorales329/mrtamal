@@ -191,64 +191,67 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        simbolo = await AuthSvc.GetSimboloMonedaAsync();
-
-        var hoy = DateTime.Today;
-        var ayer = hoy.AddDays(-1);
-
-        // Cargar en paralelo
-        var taskMes = Api.GetReporteAsync(new(TipoReporte.Mensual,
-            new DateTime(hoy.Year, hoy.Month, 1, 0, 0, 0, DateTimeKind.Utc),
-            new DateTime(hoy.Year, hoy.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(1).AddMilliseconds(-1),
-            hoy.Year, hoy.Month, null));
-        var taskHoy = Api.GetReporteAsync(new(TipoReporte.Diario,
-            new DateTime(hoy.Year, hoy.Month, hoy.Day, 0, 0, 0, DateTimeKind.Utc),
-            new DateTime(hoy.Year, hoy.Month, hoy.Day, 23, 59, 59, 999, DateTimeKind.Utc),
-            null, null, null));
-        var taskAyer = Api.GetReporteAsync(new(TipoReporte.Diario,
-            new DateTime(ayer.Year, ayer.Month, ayer.Day, 0, 0, 0, DateTimeKind.Utc),
-            new DateTime(ayer.Year, ayer.Month, ayer.Day, 23, 59, 59, 999, DateTimeKind.Utc),
-            null, null, null));
-        var taskUltima = Api.GetUltimaFechaIngresoAsync();
-
-        await Task.WhenAll(taskMes, taskHoy, taskAyer, taskUltima);
-
-        resumenMes = taskMes.Result;
-        ingresosHoy = taskHoy.Result?.TotalIngresos ?? 0;
-        egresosHoy = taskHoy.Result?.TotalEgresos ?? 0;
-        ingresosAyer = taskAyer.Result?.TotalIngresos ?? 0;
-        egresosAyer = taskAyer.Result?.TotalEgresos ?? 0;
-        ultimaFechaIngreso = taskUltima.Result?.Date;
-
-        if (ultimaFechaIngreso.HasValue)
-            diasSinActualizar = (hoy.AddDays(-1) - ultimaFechaIngreso.Value.Date).Days;
-
-        // Obtener meta diaria del proyectado
         try
         {
-            var token = await localStorage.GetItemAsync<string>("authToken");
-            var sucursalId = await localStorage.GetItemAsync<string>("sucursalActivaId");
+            simbolo = await AuthSvc.GetSimboloMonedaAsync();
 
-            // Intentar año actual, si no hay meta intentar año anterior
-            foreach (var anio in new[] { hoy.Year, hoy.Year - 1 })
+            var hoy = DateTime.Today;
+            var ayer = hoy.AddDays(-1);
+
+            var taskMes = Api.GetReporteAsync(new(TipoReporte.Mensual,
+                new DateTime(hoy.Year, hoy.Month, 1, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(hoy.Year, hoy.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(1).AddMilliseconds(-1),
+                hoy.Year, hoy.Month, null));
+            var taskHoy = Api.GetReporteAsync(new(TipoReporte.Diario,
+                new DateTime(hoy.Year, hoy.Month, hoy.Day, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(hoy.Year, hoy.Month, hoy.Day, 23, 59, 59, 999, DateTimeKind.Utc),
+                null, null, null));
+            var taskAyer = Api.GetReporteAsync(new(TipoReporte.Diario,
+                new DateTime(ayer.Year, ayer.Month, ayer.Day, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(ayer.Year, ayer.Month, ayer.Day, 23, 59, 59, 999, DateTimeKind.Utc),
+                null, null, null));
+            var taskUltima = Api.GetUltimaFechaIngresoAsync();
+
+            await Task.WhenAll(taskMes, taskHoy, taskAyer, taskUltima);
+
+            resumenMes = taskMes.Result;
+            ingresosHoy = taskHoy.Result?.TotalIngresos ?? 0;
+            egresosHoy = taskHoy.Result?.TotalEgresos ?? 0;
+            ingresosAyer = taskAyer.Result?.TotalIngresos ?? 0;
+            egresosAyer = taskAyer.Result?.TotalEgresos ?? 0;
+
+            var ultima = taskUltima.Result;
+            if (ultima.HasValue)
             {
-                using var req = new HttpRequestMessage(HttpMethod.Get,
-                    $"https://mrtamal.onrender.com/api/proyectado/{anio}");
-                req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token ?? "");
-                if (!string.IsNullOrEmpty(sucursalId))
-                    req.Headers.Add("X-Sucursal-Id", sucursalId);
-                var resp = await Http.SendAsync(req);
-                if (resp.IsSuccessStatusCode)
+                ultimaFechaIngreso = ultima.Value.Date;
+                diasSinActualizar = Math.Max(0, (hoy.AddDays(-1) - ultima.Value.Date).Days);
+            }
+
+            // Obtener meta diaria del proyectado
+            try
+            {
+                var token = await localStorage.GetItemAsync<string>("authToken");
+                var sucursalId = await localStorage.GetItemAsync<string>("sucursalActivaId");
+                foreach (var anio in new[] { hoy.Year, hoy.Year - 1 })
                 {
-                    var proy = await resp.Content.ReadFromJsonAsync<ResumenProyectado>();
-                    metaDiaria = proy?.MetaDiaria ?? 0;
-                    break;
+                    using var req = new HttpRequestMessage(HttpMethod.Get,
+                        $"https://mrtamal.onrender.com/api/proyectado/{anio}");
+                    req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token ?? "");
+                    if (!string.IsNullOrEmpty(sucursalId))
+                        req.Headers.Add("X-Sucursal-Id", sucursalId);
+                    var resp = await Http.SendAsync(req);
+                    if (resp.IsSuccessStatusCode)
+                    {
+                        var proy = await resp.Content.ReadFromJsonAsync<ResumenProyectado>();
+                        metaDiaria = proy?.MetaDiaria ?? 0;
+                        break;
+                    }
                 }
             }
+            catch { }
         }
         catch { }
-
-        cargando = false;
+        finally { cargando = false; }
     }
 
     private string TrendClass(decimal actual, decimal anterior) =>
