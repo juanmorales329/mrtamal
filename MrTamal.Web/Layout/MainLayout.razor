@@ -57,7 +57,7 @@
     }
 
     <!-- Sidebar -->
-    <aside class="sidebar @(menuAbierto ? "sidebar-open" : "")">
+    <aside class="sidebar @(menuAbierto ? "sidebar-open" : "")" style="width:240px;position:fixed;top:0;left:0;bottom:0;z-index:999;background:#1a1a2e;display:flex;flex-direction:column;overflow-y:auto">
         <div class="sidebar-header">
             <img src="/logo-mrtamal.png" alt="MrTamal" onerror="this.style.display='none'" />
             <div>
@@ -104,8 +104,8 @@
     </aside>
 
     <!-- Contenido principal -->
-    <main class="main-content">
-        <article class="content-area">
+    <main class="main-content" style="margin-left:240px;min-height:100vh;background:#f5f5f5;overflow-x:hidden">
+        <article style="padding:20px">
             @Body
         </article>
     </main>
