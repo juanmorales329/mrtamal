@@ -1,6 +1,8 @@
 ﻿@inherits LayoutComponentBase
 @inject AuthService AuthSvc
 @inject NavigationManager Nav
+@inject ApiService Api
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
 
 <div class="main-layout">
     <!-- Top navbar (móvil) -->
@@ -23,6 +25,35 @@
     @if (menuAbierto)
     {
         <div class="sidebar-overlay" @onclick="CerrarMenu"></div>
+    }
+
+    <!-- Aviso de registros pendientes -->
+    @if (mostrarAviso)
+    {
+        <div style="position:fixed;bottom:24px;right:24px;z-index:2000;max-width:340px;animation:slideIn .3s ease">
+            <div class="card border-0 shadow-lg" style="border-left:5px solid #FF6D00 !important;border-radius:12px">
+                <div class="card-body py-3 px-4">
+                    <div class="d-flex align-items-start gap-3">
+                        <span style="font-size:1.8rem;line-height:1">⚠️</span>
+                        <div style="flex:1">
+                            <div class="fw-bold" style="color:#E65100;font-size:.95rem">Registros pendientes</div>
+                            <div class="text-muted" style="font-size:.82rem;margin-top:2px">
+                                No hay ingresos registrados del <strong>@fechaAvisoTexto</strong>. ¿Deseas ingresarlos ahora?
+                            </div>
+                            <div class="d-flex gap-2 mt-2">
+                                <a href="/ingresos" class="btn btn-sm text-white fw-bold" style="background:#FF6D00;border-radius:6px;font-size:.8rem" @onclick="CerrarAviso">
+                                    + Ingresar ahora
+                                </a>
+                                <button class="btn btn-sm btn-outline-secondary" style="border-radius:6px;font-size:.8rem" @onclick="CerrarAvisoHoy">
+                                    Recordar mañana
+                                </button>
+                            </div>
+                        </div>
+                        <button class="btn-close" style="font-size:.7rem" @onclick="CerrarAviso"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
     }
 
     <!-- Sidebar -->
@@ -83,10 +114,53 @@
 @code {
     private bool menuAbierto = false;
     private string sucursalNombre = "";
+    private bool mostrarAviso = false;
+    private string fechaAvisoTexto = "";
+    private const string AvisoKey = "avisoRegistroFecha";
 
     protected override async Task OnInitializedAsync()
     {
         sucursalNombre = await AuthSvc.GetSucursalActivaNombreAsync();
+        await VerificarAvisoPendiente();
+    }
+
+    private async Task VerificarAvisoPendiente()
+    {
+        try
+        {
+            // Solo mostrar después de las 6 PM hora local
+            var ahora = DateTime.Now;
+            if (ahora.Hour < 18) return;
+
+            var ayer = ahora.Date.AddDays(-1);
+
+            // No molestar si ya se cerró el aviso hoy
+            var ultimoAviso = await localStorage.GetItemAsync<string>(AvisoKey);
+            if (ultimoAviso == ahora.Date.ToString("yyyy-MM-dd")) return;
+
+            // No mostrar en fin de semana (sábado=6, domingo=0) si ayer fue viernes
+            // Verificar si hay ingresos del día anterior
+            var tieneRegistros = await Api.TieneIngresosEnFechaAsync(ayer);
+            if (!tieneRegistros)
+            {
+                fechaAvisoTexto = ayer.ToString("dddd dd/MM/yyyy");
+                mostrarAviso = true;
+            }
+        }
+        catch { }
+    }
+
+    private async Task CerrarAviso()
+    {
+        mostrarAviso = false;
+        await localStorage.SetItemAsync(AvisoKey, DateTime.Now.Date.ToString("yyyy-MM-dd"));
+    }
+
+    private async Task CerrarAvisoHoy()
+    {
+        mostrarAviso = false;
+        // Guardar para no molestar hasta mañana
+        await localStorage.SetItemAsync(AvisoKey, DateTime.Now.Date.ToString("yyyy-MM-dd"));
     }
 
     private void ToggleMenu() => menuAbierto = !menuAbierto;

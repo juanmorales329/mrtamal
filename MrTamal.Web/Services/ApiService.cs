@@ -27,6 +27,21 @@ public class ApiService(HttpClient http, ILocalStorageService localStorage)
         }
     }
 
+    // Verificar si hay ingresos en una fecha
+    public async Task<bool> TieneIngresosEnFechaAsync(DateTime fecha)
+    {
+        try
+        {
+            await EnsureTokenAsync();
+            var desde = fecha.Date;
+            var hasta = fecha.Date.AddDays(1).AddTicks(-1);
+            var lista = await http.GetFromJsonAsync<List<MovimientoDto>>(
+                BuildUrl("/api/ingresos", desde, hasta));
+            return lista?.Any() == true;
+        }
+        catch { return true; } // en caso de error, no molestar
+    }
+
     // Catalogos
     public async Task<List<CatalogoDto>?> GetCatalogosAsync(TipoCatalogo? tipo = null)
     {
