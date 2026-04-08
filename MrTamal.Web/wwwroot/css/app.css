@@ -1,5 +1,5 @@
 /* ===== VARIABLES ===== */
-/* MrTamal v3 - build 2026 */
+/* MrTamal v4 */
 :root {
     --sidebar-width: 240px;
     --navbar-height: 56px;
@@ -12,11 +12,11 @@
 
 /* ===== RESET ===== */
 *, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; }
+html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
 
 /* ===== LAYOUT ===== */
+/* El sidebar es fixed, el main-content usa margin-left para compensar */
 .main-layout {
-    display: flex;
     min-height: 100vh;
     width: 100%;
 }
@@ -76,7 +76,6 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
 /* ===== SIDEBAR ===== */
 .sidebar {
     width: var(--sidebar-width);
-    min-width: var(--sidebar-width);
     background: var(--sidebar-bg);
     display: flex;
     flex-direction: column;
@@ -85,6 +84,7 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
     z-index: 999;
     transition: transform 0.3s ease;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .sidebar-header {
@@ -137,7 +137,6 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
 }
 
 .sidebar-nav { flex: 1; padding: 8px 0; }
-
 .nav-items { display: flex; flex-direction: column; }
 
 .nav-section-title {
@@ -161,10 +160,7 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
     font-size: 0.9rem;
 }
 
-.nav-item-link:hover {
-    background: var(--sidebar-hover);
-    color: white;
-}
+.nav-item-link:hover { background: var(--sidebar-hover); color: white; }
 
 .nav-item-link.active {
     background: var(--sidebar-active);
@@ -196,26 +192,17 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
 .sidebar-sucursal-btn:hover { background: rgba(255,109,0,0.3); }
 
 /* ===== MAIN CONTENT ===== */
-.sidebar-spacer {
-    width: var(--sidebar-width);
-    min-width: var(--sidebar-width);
-    flex-shrink: 0;
-}
-
+/* Sidebar es fixed de 240px, compensamos con margin-left */
 .main-content {
-    flex: 1;
+    margin-left: var(--sidebar-width);
     min-height: 100vh;
     background: #f5f5f5;
-    min-width: 0;
     overflow-x: hidden;
-    width: 0; /* flex:1 se encarga del ancho real */
 }
 
 .content-area {
     padding: 24px;
     padding-top: 16px;
-    width: 100%;
-    box-sizing: border-box;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -224,7 +211,6 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
 
     .sidebar {
         transform: translateX(-100%);
-        top: 0;
     }
 
     .sidebar-open {
@@ -233,59 +219,25 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
 
     .sidebar-overlay { display: block; }
     .close-sidebar-btn { display: block; }
-    .sidebar-spacer { display: none; }
 
+    /* En móvil el sidebar está oculto, quitamos el margin */
     .main-content {
+        margin-left: 0;
         padding-top: var(--navbar-height);
-        width: 100%;
-    }
-    .content-area {
-        padding: 16px;
     }
 
-    /* Tablas responsivas */
-    .table-responsive-stack thead { display: none; }
-    .table-responsive-stack tr {
-        display: block;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        margin-bottom: 12px;
-        padding: 8px;
-    }
-    .table-responsive-stack td {
-        display: flex;
-        justify-content: space-between;
-        padding: 4px 8px;
-        border: none;
-    }
-    .table-responsive-stack td::before {
-        content: attr(data-label);
-        font-weight: bold;
-        color: #666;
-    }
+    .content-area { padding: 12px; }
 
-    /* Cards en móvil */
     .card { border-radius: 12px; }
-
-    /* Botones más grandes en móvil */
     .btn { min-height: 40px; }
 
-    /* Modales full screen en móvil */
-    .modal-dialog {
-        margin: 0;
-        max-width: 100%;
-        height: 100%;
-    }
-    .modal-content {
-        border-radius: 0;
-        height: 100%;
-    }
+    .modal-dialog { margin: 0; max-width: 100%; }
+    .modal-content { border-radius: 0; }
 }
 
 @media (max-width: 480px) {
-    .content-area { padding: 12px; }
-    h3 { font-size: 1.3rem; }
-    .display-3 { font-size: 2rem; }
+    .content-area { padding: 10px; }
+    h3 { font-size: 1.2rem; }
 }
 
 /* ===== UTILIDADES ===== */
