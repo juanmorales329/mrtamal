@@ -370,39 +370,30 @@ else if (sinMeta)
     private static string FormatK(decimal v) =>
         v >= 1000 ? $"{v / 1000:N1}k" : v.ToString("N0");
 
-    private async Task DescargarPdf()
-    {
-        descargando = true;
-        var bytes = await Http.GetByteArrayAsync($"https://mrtamal.onrender.com/api/proyectado/{anioSeleccionado}/pdf");
-        if (bytes is not null)
-            await JS.InvokeVoidAsync("downloadPdf", Convert.ToBase64String(bytes), $"proyectado_{anioSeleccionado}.pdf");
-        descargando = false;
-    }
-
-    private async Task DescargarExcel()
-    {
-        descargandoExcel = true;
-        var bytes = await Http.GetByteArrayAsync($"https://mrtamal.onrender.com/api/proyectado/{anioSeleccionado}/excel");
-        if (bytes is not null)
-            await JS.InvokeVoidAsync("downloadFile", Convert.ToBase64String(bytes), $"proyectado_{anioSeleccionado}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        descargandoExcel = false;
-    }
-
     protected override async Task OnInitializedAsync()
     {
         simbolo = await AuthSvc.GetSimboloMonedaAsync();
-        var token = await localStorage.GetItemAsync<string>("authToken");
-        if (!string.IsNullOrEmpty(token))
-            Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
         await Cargar();
+    }
+
+    private async Task<HttpRequestMessage> BuildRequest(HttpMethod method, string url)
+    {
+        var token = await localStorage.GetItemAsync<string>("authToken");
+        var sucursalId = await localStorage.GetItemAsync<string>("sucursalActivaId");
+        var req = new HttpRequestMessage(method, url);
+        if (!string.IsNullOrEmpty(token))
+            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        if (!string.IsNullOrEmpty(sucursalId))
+            req.Headers.Add("X-Sucursal-Id", sucursalId);
+        return req;
     }
 
     private async Task Cargar()
     {
         sinMeta = false; resumen = null;
         cuatrimestresExpandidos.Clear();
-        var resp = await Http.GetAsync($"https://mrtamal.onrender.com/api/proyectado/{anioSeleccionado}");
+        var req = await BuildRequest(HttpMethod.Get, $"https://mrtamal.onrender.com/api/proyectado/{anioSeleccionado}");
+        var resp = await Http.SendAsync(req);
         if (resp.IsSuccessStatusCode)
         {
             resumen = await resp.Content.ReadFromJsonAsync<ResumenProyectado>();
@@ -418,23 +409,52 @@ else if (sinMeta)
 
     private async Task GuardarMeta()
     {
-        await Http.PostAsJsonAsync("https://mrtamal.onrender.com/api/proyectado/metas",
-            new { anio = anioSeleccionado, metaVentas = formMeta, excluirDomingos = formExcluirDomingos, sucursalId = (int?)null });
+        var req = await BuildRequest(HttpMethod.Post, "https://mrtamal.onrender.com/api/proyectado/metas");
+        req.Content = System.Net.Http.Json.JsonContent.Create(new { anio = anioSeleccionado, metaVentas = formMeta, excluirDomingos = formExcluirDomingos, sucursalId = (int?)null });
+        await Http.SendAsync(req);
         await Cargar();
     }
 
     private async Task AgregarDia()
     {
-        await Http.PostAsJsonAsync("https://mrtamal.onrender.com/api/proyectado/dias-nolaborables",
-            new { fecha = formFechaDia, descripcion = formDescDia, sucursalId = (int?)null });
+        var req = await BuildRequest(HttpMethod.Post, "https://mrtamal.onrender.com/api/proyectado/dias-nolaborables");
+        req.Content = System.Net.Http.Json.JsonContent.Create(new { fecha = formFechaDia, descripcion = formDescDia, sucursalId = (int?)null });
+        await Http.SendAsync(req);
         mostrarAgregarDia = false;
         await Cargar();
     }
 
     private async Task EliminarDia(int id)
     {
-        await Http.DeleteAsync($"https://mrtamal.onrender.com/api/proyectado/dias-nolaborables/{id}");
+        var req = await BuildRequest(HttpMethod.Delete, $"https://mrtamal.onrender.com/api/proyectado/dias-nolaborables/{id}");
+        await Http.SendAsync(req);
         await Cargar();
+    }
+
+    private async Task DescargarPdf()
+    {
+        descargando = true;
+        var req = await BuildRequest(HttpMethod.Get, $"https://mrtamal.onrender.com/api/proyectado/{anioSeleccionado}/pdf");
+        var resp = await Http.SendAsync(req);
+        if (resp.IsSuccessStatusCode)
+        {
+            var bytes = await resp.Content.ReadAsByteArrayAsync();
+            await JS.InvokeVoidAsync("downloadPdf", Convert.ToBase64String(bytes), $"proyectado_{anioSeleccionado}.pdf");
+        }
+        descargando = false;
+    }
+
+    private async Task DescargarExcel()
+    {
+        descargandoExcel = true;
+        var req = await BuildRequest(HttpMethod.Get, $"https://mrtamal.onrender.com/api/proyectado/{anioSeleccionado}/excel");
+        var resp = await Http.SendAsync(req);
+        if (resp.IsSuccessStatusCode)
+        {
+            var bytes = await resp.Content.ReadAsByteArrayAsync();
+            await JS.InvokeVoidAsync("downloadFile", Convert.ToBase64String(bytes), $"proyectado_{anioSeleccionado}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+        descargandoExcel = false;
     }
 
     private string periodoGrafica = "mensual";
