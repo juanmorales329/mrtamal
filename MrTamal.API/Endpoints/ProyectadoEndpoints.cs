@@ -160,7 +160,7 @@ public static class ProyectadoEndpoints
 
         // Usar rango UTC en lugar de .Year para compatibilidad con PostgreSQL
         var anoInicio = DateTime.SpecifyKind(new DateTime(anio, 1, 1), DateTimeKind.Utc);
-        var anoFin = DateTime.SpecifyKind(new DateTime(anio, 12, 31, 23, 59, 59), DateTimeKind.Utc);
+        var anoFin = DateTime.SpecifyKind(new DateTime(anio + 1, 1, 1), DateTimeKind.Utc).AddTicks(-1);
 
         IQueryable<Ingreso> queryIngresos = db.Ingresos.Where(i => i.Fecha >= anoInicio && i.Fecha <= anoFin);
         if (!esGlobal)
@@ -185,7 +185,7 @@ public static class ProyectadoEndpoints
         foreach (var (num, periodo, mesInicio, mesFin) in definiciones)
         {
             var ini = DateTime.SpecifyKind(new DateTime(anio, mesInicio, 1), DateTimeKind.Utc);
-            var finC = DateTime.SpecifyKind(new DateTime(anio, mesFin, 1).AddMonths(1).AddTicks(-1), DateTimeKind.Utc);
+            var finC = DateTime.SpecifyKind(new DateTime(anio, mesFin + 1, 1), DateTimeKind.Utc).AddTicks(-1);
             IQueryable<Ingreso> qC = db.Ingresos.Where(i => i.Fecha >= ini && i.Fecha <= finC);
             if (!esGlobal)
             {
@@ -212,7 +212,7 @@ public static class ProyectadoEndpoints
             }
             var metaMes = metaDiaria * diasLabMes;
             var iniMesUtc = DateTime.SpecifyKind(inicioMes, DateTimeKind.Utc);
-            var finMesUtc = DateTime.SpecifyKind(finMes.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+            var finMesUtc = DateTime.SpecifyKind(inicioMes.AddMonths(1), DateTimeKind.Utc).AddTicks(-1);
             IQueryable<Ingreso> qMes = db.Ingresos.Where(i => i.Fecha >= iniMesUtc && i.Fecha <= finMesUtc);
             if (!esGlobal)
             {
