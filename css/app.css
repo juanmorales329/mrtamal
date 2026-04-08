@@ -195,12 +195,13 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
 
 /* ===== MAIN CONTENT ===== */
 .main-content {
-    margin-left: var(--sidebar-width);
     flex: 1;
     min-height: 100vh;
     background: #f5f5f5;
-    width: calc(100% - var(--sidebar-width));
+    min-width: 0;
     overflow-x: hidden;
+    margin-left: 0;
+    width: 100%;
 }
 
 .content-area {
@@ -231,6 +232,7 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-
     .main-content {
         margin-left: 0;
         padding-top: var(--navbar-height);
+        width: 100%;
     }
 
     .content-area {
