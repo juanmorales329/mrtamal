@@ -120,7 +120,7 @@ else
     private int anioActual = DateTime.Now.Year;
     private bool mostrarModal;
     private int editandoId;
-    private DateTime formFecha = DateTime.Today;
+    private DateTime formFecha = DateTime.Today.AddDays(-1);
     private int formCatalogoId;
     private decimal formCantidad;
     private string? formNotas;
@@ -166,7 +166,7 @@ else
     private void AbrirModal(MovimientoDto? m)
     {
         editandoId = m?.Id ?? 0;
-        formFecha = m?.Fecha ?? DateTime.Today;
+        formFecha = m?.Fecha ?? DateTime.Today.AddDays(-1);
         formCatalogoId = catalogos?.FirstOrDefault()?.Id ?? 0;
         formCantidad = m?.Cantidad ?? 0;
         formNotas = m?.Notas;
