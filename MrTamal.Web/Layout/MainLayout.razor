@@ -25,6 +25,9 @@
         <div class="sidebar-overlay" @onclick="CerrarMenu"></div>
     }
 
+    <!-- Sidebar spacer (reserva espacio del sidebar fixed) -->
+    <div style="width:var(--sidebar-width);flex-shrink:0" class="d-none d-md-block"></div>
+
     <!-- Sidebar -->
     <aside class="sidebar @(menuAbierto ? "sidebar-open" : "")">
         <div class="sidebar-header">

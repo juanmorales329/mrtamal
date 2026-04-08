@@ -45,9 +45,9 @@
 else
 {
     <div class="table-responsive">
-        <table class="table table-hover">
+        <table class="table table-hover mb-0">
             <thead class="table-success">
-                <tr><th>Fecha</th><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Total del día</th><th>Notas</th><th></th></tr>
+                <tr><th>Fecha</th><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Notas</th><th style="width:80px"></th></tr>
             </thead>
             <tbody>
                 @{
@@ -55,7 +55,6 @@ else
                     foreach (var grupo in grupos)
                     {
                         var totalDia = grupo.Sum(i => i.Cantidad);
-                        var esPrimero = true;
                         foreach (var i in grupo.OrderByDescending(x => x.Id))
                         {
                             <tr>
@@ -63,32 +62,32 @@ else
                                 <td><span class="badge bg-secondary">@i.CodigoCatalogo</span></td>
                                 <td>@i.DescripcionCatalogo</td>
                                 <td class="text-success fw-bold">@simbolo @i.Cantidad.ToString("N2")</td>
-                                @if (esPrimero)
-                                {
-                                    <td rowspan="@grupo.Count()" class="align-middle text-center fw-bold text-success bg-success bg-opacity-10">
-                                        @simbolo @totalDia.ToString("N2")
-                                    </td>
-                                    esPrimero = false;
-                                }
                                 <td class="text-muted small">@i.Notas</td>
-                                <td>
+                                <td class="text-end">
                                     <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AbrirModal(i)">✏</button>
                                     <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(i.Id)">🗑</button>
                                 </td>
                             </tr>
                         }
+                        <tr style="background:#E8F5E9;border-top:2px solid #A5D6A7">
+                            <td colspan="3" class="text-end text-muted small fw-semibold" style="padding:.4rem .9rem">
+                                Total @grupo.Key.ToString("dd/MM/yyyy")
+                            </td>
+                            <td class="fw-bold text-success" style="padding:.4rem .9rem">@simbolo @totalDia.ToString("N2")</td>
+                            <td colspan="2"></td>
+                        </tr>
                     }
                 }
                 @if (!lista.Any())
                 {
-                    <tr><td colspan="7" class="text-center text-muted py-4">Sin ingresos en este mes</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted py-4">Sin ingresos en este mes</td></tr>
                 }
             </tbody>
             <tfoot>
                 <tr class="table-success">
                     <td colspan="3"><strong>Total @mesAnioTexto</strong></td>
                     <td><strong>@simbolo @lista.Sum(i => i.Cantidad).ToString("N2")</strong></td>
-                    <td colspan="3"></td>
+                    <td colspan="2"></td>
                 </tr>
             </tfoot>
         </table>
