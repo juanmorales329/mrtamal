@@ -2,11 +2,18 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject ApiService Api
 @inject HttpClient Http
+@inject IJSRuntime JS
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
 
 <PageTitle>Usuarios y Roles</PageTitle>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0">👥 Usuarios y Roles</h3>
-    <button class="btn btn-primary" @onclick="AbrirModalCrear">+ Nuevo Usuario</button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-success" @onclick="DescargarBackup" disabled="@descargandoBackup">
+            @(descargandoBackup ? "⏳" : "💾 Backup Excel")
+        </button>
+        <button class="btn btn-primary" @onclick="AbrirModalCrear">+ Nuevo Usuario</button>
+    </div>
 </div>
 
 @if (lista is null) { <p>Cargando...</p> }
@@ -278,6 +285,29 @@ else
 @code {
     private List<UsuarioDto>? lista;
     private List<SucursalDto>? sucursales;
+    private bool descargandoBackup;
+
+    private async Task DescargarBackup()
+    {
+        descargandoBackup = true;
+        try
+        {
+            var token = await localStorage.GetItemAsync<string>("authToken");
+            using var req = new HttpRequestMessage(HttpMethod.Get, "https://mrtamal.onrender.com/api/backup");
+            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var resp = await Http.SendAsync(req);
+            if (resp.IsSuccessStatusCode)
+            {
+                var bytes = await resp.Content.ReadAsByteArrayAsync();
+                await JS.InvokeVoidAsync("downloadFile",
+                    Convert.ToBase64String(bytes),
+                    $"backup_mrtamal_{DateTime.Now:yyyyMMdd}.xlsx",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            }
+        }
+        catch { }
+        descargandoBackup = false;
+    }
     private bool mostrarCrear, mostrarEditar, mostrarPassword, mostrarTraslado, mostrarHistorial;
     private bool mostrarPwd;
     private UsuarioDto? editando;

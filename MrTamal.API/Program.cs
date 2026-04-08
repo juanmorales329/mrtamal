@@ -105,5 +105,6 @@ app.MapMenuPublicoEndpoints();
 app.MapSucursalEndpoints();
 app.MapUsuarioEndpoints();
 app.MapProyectadoEndpoints();
+app.MapBackupEndpoints();
 
 app.Run();

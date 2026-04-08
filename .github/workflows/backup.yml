@@ -1,0 +1,24 @@
+name: Weekly Backup
+
+on:
+  schedule:
+    # Cada domingo a las 3:00 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch: # permite ejecutarlo manualmente
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download backup from API
+        run: |
+          curl -f -o backup_$(date +%Y%m%d).xlsx \
+            -H "Authorization: Bearer ${{ secrets.BACKUP_TOKEN }}" \
+            https://mrtamal.onrender.com/api/backup
+
+      - name: Upload backup as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-${{ github.run_number }}-${{ github.run_id }}
+          path: backup_*.xlsx
+          retention-days: 90
