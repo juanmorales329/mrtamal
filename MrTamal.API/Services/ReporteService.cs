@@ -72,12 +72,25 @@ public class ReporteService(AppDbContext db)
     private static (DateTime inicio, DateTime fin) ObtenerRango(ReporteRequest req)
     {
         var hoy = DateTime.UtcNow.Date;
-        // Si vienen fechas explícitas, usarlas siempre
+        // Si vienen fechas explícitas, usarlas siempre (normalizar a UTC)
         if (req.FechaInicio.HasValue && req.FechaFin.HasValue)
         {
-            var ini = DateTime.SpecifyKind(req.FechaInicio.Value, DateTimeKind.Utc);
-            var fin = DateTime.SpecifyKind(req.FechaFin.Value, DateTimeKind.Utc);
+            var ini = req.FechaInicio.Value.Kind == DateTimeKind.Utc
+                ? req.FechaInicio.Value
+                : DateTime.SpecifyKind(req.FechaInicio.Value, DateTimeKind.Utc);
+            var fin = req.FechaFin.Value.Kind == DateTimeKind.Utc
+                ? req.FechaFin.Value
+                : DateTime.SpecifyKind(req.FechaFin.Value, DateTimeKind.Utc);
+            // Asegurar que fin cubra todo el día
+            if (fin.TimeOfDay == TimeSpan.Zero)
+                fin = fin.AddDays(1).AddTicks(-1);
             return (ini, fin);
+        }
+        // Si viene año y mes explícitos (tipo Mensual sin fechas)
+        if (req.Tipo == TipoReporte.Mensual && req.Anio.HasValue && req.Mes.HasValue)
+        {
+            var ini = new DateTime(req.Anio.Value, req.Mes.Value, 1, 0, 0, 0, DateTimeKind.Utc);
+            return (ini, ini.AddMonths(1).AddTicks(-1));
         }
         return req.Tipo switch
         {

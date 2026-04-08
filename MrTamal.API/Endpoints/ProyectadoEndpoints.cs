@@ -109,7 +109,9 @@ public static class ProyectadoEndpoints
             var uid = GetUserId(user);
             var meta = await db.MetasAnuales.FirstOrDefaultAsync(m => m.Anio == anio);
             if (meta is null) return Results.NotFound();
-            var diasNoLab = await db.DiasNoLaborables.Where(d => d.Fecha.Year == anio).ToListAsync();
+            var anoIni = DateTime.SpecifyKind(new DateTime(anio, 1, 1), DateTimeKind.Utc);
+            var anoFin = DateTime.SpecifyKind(new DateTime(anio, 12, 31, 23, 59, 59), DateTimeKind.Utc);
+            var diasNoLab = await db.DiasNoLaborables.Where(d => d.Fecha >= anoIni && d.Fecha <= anoFin).ToListAsync();
             var resumen = await CalcularResumen(meta, diasNoLab, db, uid, anio);
             var sucursal = await db.Usuarios.Include(u => u.Sucursal).Where(u => u.Id == uid).Select(u => u.Sucursal).FirstOrDefaultAsync();
             var simbolo = sucursal?.SimboloMoneda ?? "$";
@@ -117,13 +119,14 @@ public static class ProyectadoEndpoints
             return Results.File(pdf, "application/pdf", $"proyectado_{anio}.pdf");
         });
 
-        // Exportar Excel del proyectado
         group.MapGet("/{anio:int}/excel", async (int anio, AppDbContext db, ClaimsPrincipal user, PdfService pdfSvc) =>
         {
             var uid = GetUserId(user);
             var meta = await db.MetasAnuales.FirstOrDefaultAsync(m => m.Anio == anio);
             if (meta is null) return Results.NotFound();
-            var diasNoLab = await db.DiasNoLaborables.Where(d => d.Fecha.Year == anio).ToListAsync();
+            var anoIni = DateTime.SpecifyKind(new DateTime(anio, 1, 1), DateTimeKind.Utc);
+            var anoFin = DateTime.SpecifyKind(new DateTime(anio, 12, 31, 23, 59, 59), DateTimeKind.Utc);
+            var diasNoLab = await db.DiasNoLaborables.Where(d => d.Fecha >= anoIni && d.Fecha <= anoFin).ToListAsync();
             var resumen = await CalcularResumen(meta, diasNoLab, db, uid, anio);
             var sucursal = await db.Usuarios.Include(u => u.Sucursal).Where(u => u.Id == uid).Select(u => u.Sucursal).FirstOrDefaultAsync();
             var simbolo = sucursal?.SimboloMoneda ?? "$";
@@ -155,7 +158,11 @@ public static class ProyectadoEndpoints
         var esGlobal = (usuario?.Rol == Roles.Admin || usuario?.Rol == Roles.Gerente) && !usuario.SucursalId.HasValue;
         var sucursalId = usuario?.SucursalId;
 
-        IQueryable<Ingreso> queryIngresos = db.Ingresos.Where(i => i.Fecha.Year == anio);
+        // Usar rango UTC en lugar de .Year para compatibilidad con PostgreSQL
+        var anoInicio = DateTime.SpecifyKind(new DateTime(anio, 1, 1), DateTimeKind.Utc);
+        var anoFin = DateTime.SpecifyKind(new DateTime(anio, 12, 31, 23, 59, 59), DateTimeKind.Utc);
+
+        IQueryable<Ingreso> queryIngresos = db.Ingresos.Where(i => i.Fecha >= anoInicio && i.Fecha <= anoFin);
         if (!esGlobal)
         {
             if (sucursalId.HasValue)

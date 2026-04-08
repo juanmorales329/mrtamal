@@ -25,14 +25,14 @@ public static class ReporteEndpoints
             var reporte = await reporteSvc.GenerarAsync(req, uid, sucursalId);
             var titulo = req.Tipo switch
             {
-                TipoReporte.Diario => $"Reporte Diario - {DateTime.Now:dd/MM/yyyy}",
-                TipoReporte.Semanal => $"Reporte Semanal - Semana {GetWeekNumber(DateTime.Now)}",
-                TipoReporte.Mensual => $"Reporte Mensual - {DateTime.Now:MMMM yyyy}",
+                TipoReporte.Diario => $"Reporte Diario - {req.FechaInicio?.ToString("dd/MM/yyyy") ?? DateTime.Now.ToString("dd/MM/yyyy")}",
+                TipoReporte.Semanal => $"Reporte Semanal - {req.FechaInicio?.ToString("dd/MM/yyyy")} al {req.FechaFin?.ToString("dd/MM/yyyy")}",
+                TipoReporte.Mensual => req.FechaInicio.HasValue ? $"Reporte Mensual - {req.FechaInicio.Value:MMMM yyyy}" : $"Reporte Mensual - {DateTime.Now:MMMM yyyy}",
                 TipoReporte.ComparacionAnual => $"Comparación Anual {req.Anio} vs {req.AnioComparacion}",
                 TipoReporte.ComparacionMensual => $"Comparación Mensual por Mes - {req.Anio}",
                 _ => "Reporte"
             };
-            var pdf = pdfSvc.GenerarReportePdf(reporte, titulo);
+            var pdf = pdfSvc.GenerarReportePdf(reporte, titulo, req.Simbolo ?? "$");
             return Results.File(pdf, "application/pdf", $"reporte_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
         });
 
@@ -43,12 +43,14 @@ public static class ReporteEndpoints
             var reporte = await reporteSvc.GenerarAsync(req, uid, sucursalId);
             var titulo = req.Tipo switch
             {
-                TipoReporte.Diario => $"Reporte Diario - {DateTime.Now:dd/MM/yyyy}",
-                TipoReporte.Semanal => $"Reporte Semanal",
-                TipoReporte.Mensual => $"Reporte Mensual - {DateTime.Now:MMMM yyyy}",
+                TipoReporte.Diario => $"Reporte Diario - {req.FechaInicio?.ToString("dd/MM/yyyy") ?? DateTime.Now.ToString("dd/MM/yyyy")}",
+                TipoReporte.Semanal => $"Reporte Semanal - {req.FechaInicio?.ToString("dd/MM/yyyy")} al {req.FechaFin?.ToString("dd/MM/yyyy")}",
+                TipoReporte.Mensual => req.FechaInicio.HasValue ? $"Reporte Mensual - {req.FechaInicio.Value:MMMM yyyy}" : $"Reporte Mensual - {DateTime.Now:MMMM yyyy}",
+                TipoReporte.ComparacionAnual => $"Comparación Anual {req.Anio} vs {req.AnioComparacion}",
+                TipoReporte.ComparacionMensual => $"Comparación Mensual por Mes - {req.Anio}",
                 _ => "Reporte"
             };
-            var excel = pdfSvc.GenerarReporteExcel(reporte, titulo, "$");
+            var excel = pdfSvc.GenerarReporteExcel(reporte, titulo, req.Simbolo ?? "$");
             return Results.File(excel, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"reporte_{DateTime.Now:yyyyMMdd}.xlsx");
         });
     }

@@ -251,6 +251,7 @@
             </div>
         </div>
     </div>
+</div>
 }
 
 @code {
@@ -365,20 +366,20 @@
         return tipoReporte switch
         {
             0 => new(TipoReporte.Diario,
-                    DateTime.SpecifyKind(fechaDiaria.Date, DateTimeKind.Utc),
-                    DateTime.SpecifyKind(fechaDiaria.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc),
-                    null, null, null, filtroCodigo),
+                    new DateTime(fechaDiaria.Year, fechaDiaria.Month, fechaDiaria.Day, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(fechaDiaria.Year, fechaDiaria.Month, fechaDiaria.Day, 23, 59, 59, 999, DateTimeKind.Utc),
+                    null, null, null, filtroCodigo, simbolo),
             1 => new(TipoReporte.Semanal,
-                    DateTime.SpecifyKind(semanaDesde.Date, DateTimeKind.Utc),
-                    DateTime.SpecifyKind(semanaHasta.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc),
-                    null, null, null, filtroCodigo),
+                    new DateTime(semanaDesde.Year, semanaDesde.Month, semanaDesde.Day, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(semanaHasta.Year, semanaHasta.Month, semanaHasta.Day, 23, 59, 59, 999, DateTimeKind.Utc),
+                    null, null, null, filtroCodigo, simbolo),
             2 => new(TipoReporte.Mensual,
-                    DateTime.SpecifyKind(new DateTime(anio, mesSeleccionado, 1), DateTimeKind.Utc),
-                    DateTime.SpecifyKind(new DateTime(anio, mesSeleccionado, 1).AddMonths(1).AddTicks(-1), DateTimeKind.Utc),
-                    null, null, null, filtroCodigo),
-            3 => new(TipoReporte.ComparacionAnual, null, null, anio, null, anioComparacion, filtroCodigo),
-            4 => new(TipoReporte.ComparacionMensual, null, null, anio, null, null, filtroCodigo),
-            _ => new(TipoReporte.Mensual, null, null, null, null, null, filtroCodigo)
+                    new DateTime(anio, mesSeleccionado, 1, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(anio, mesSeleccionado, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(1).AddMilliseconds(-1),
+                    anio, mesSeleccionado, null, filtroCodigo, simbolo),
+            3 => new(TipoReporte.ComparacionAnual, null, null, anio, null, anioComparacion, filtroCodigo, simbolo),
+            4 => new(TipoReporte.ComparacionMensual, null, null, anio, null, null, filtroCodigo, simbolo),
+            _ => new(TipoReporte.Mensual, null, null, null, null, null, filtroCodigo, simbolo)
         };
     }
 }

@@ -7,7 +7,8 @@ public record ReporteRequest(
     int? Anio,
     int? Mes,
     int? AnioComparacion,
-    string? FiltroCodigo = null  // filtrar por código de catálogo ej: "1001", "Cash"
+    string? FiltroCodigo = null,
+    string? Simbolo = "$"
 );
 
 public enum TipoReporte

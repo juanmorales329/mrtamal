@@ -131,6 +131,28 @@ public class PdfService
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         using var pkg = new ExcelPackage();
 
+        // Hoja de Resumen
+        var wsR = pkg.Workbook.Worksheets.Add("Resumen");
+        wsR.Cells[1, 1].Value = titulo;
+        wsR.Cells[1, 1].Style.Font.Bold = true;
+        wsR.Cells[1, 1].Style.Font.Size = 14;
+        wsR.Cells[1, 1, 1, 3].Merge = true;
+        wsR.Cells[3, 1].Value = "Total Ingresos"; wsR.Cells[3, 1].Style.Font.Bold = true;
+        wsR.Cells[3, 2].Value = reporte.TotalIngresos;
+        wsR.Cells[3, 2].Style.Numberformat.Format = $"\"{simbolo}\" #,##0.00";
+        wsR.Cells[3, 2].Style.Font.Color.SetColor(SysColor.FromArgb(46, 125, 50));
+        wsR.Cells[4, 1].Value = "Total Egresos"; wsR.Cells[4, 1].Style.Font.Bold = true;
+        wsR.Cells[4, 2].Value = reporte.TotalEgresos;
+        wsR.Cells[4, 2].Style.Numberformat.Format = $"\"{simbolo}\" #,##0.00";
+        wsR.Cells[4, 2].Style.Font.Color.SetColor(SysColor.FromArgb(198, 40, 40));
+        wsR.Cells[5, 1].Value = "Balance"; wsR.Cells[5, 1].Style.Font.Bold = true;
+        wsR.Cells[5, 2].Value = reporte.Balance;
+        wsR.Cells[5, 2].Style.Numberformat.Format = $"\"{simbolo}\" #,##0.00";
+        wsR.Cells[5, 2].Style.Font.Color.SetColor(reporte.Balance >= 0 ? SysColor.FromArgb(33, 150, 243) : SysColor.FromArgb(230, 81, 0));
+        wsR.Cells[7, 1].Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}";
+        wsR.Cells[7, 1].Style.Font.Italic = true;
+        wsR.Column(1).Width = 20; wsR.Column(2).Width = 18;
+
         void FillSheet(ExcelWorksheet ws, List<ReporteDetalle> items, SysColor headerColor)
         {
             var headers = new[] { "Fecha", "Código", "Descripción", "Cantidad", "Notas" };
@@ -143,7 +165,15 @@ public class PdfService
                 ws.Cells[r, 4].Style.Numberformat.Format = $"\"{simbolo}\" #,##0.00";
                 ws.Cells[r, 5].Value = item.Notas ?? ""; r++;
             }
-            if (items.Any()) ws.Cells[ws.Dimension.Address].AutoFitColumns();
+            // Fila de total
+            if (items.Any())
+            {
+                ws.Cells[r, 3].Value = "TOTAL"; ws.Cells[r, 3].Style.Font.Bold = true;
+                ws.Cells[r, 4].Value = items.Sum(x => x.Cantidad);
+                ws.Cells[r, 4].Style.Numberformat.Format = $"\"{simbolo}\" #,##0.00";
+                ws.Cells[r, 4].Style.Font.Bold = true;
+                ws.Cells[ws.Dimension.Address].AutoFitColumns();
+            }
         }
 
         FillSheet(pkg.Workbook.Worksheets.Add("Ingresos"), reporte.Ingresos, SysColor.FromArgb(46, 125, 50));
@@ -167,7 +197,7 @@ public class PdfService
         return pkg.GetAsByteArray();
     }
 
-    public byte[] GenerarReportePdf(ReporteResumen reporte, string titulo)
+    public byte[] GenerarReportePdf(ReporteResumen reporte, string titulo, string simbolo = "$")
     {
         QuestPDF.Settings.License = LicenseType.Community;
 
@@ -194,26 +224,26 @@ public class PdfService
                         row.RelativeItem().Column(c =>
                         {
                             c.Item().Text("Total Ingresos").Bold();
-                            c.Item().Text($"Q {reporte.TotalIngresos:N2}").FontColor(Colors.Green.Darken2).FontSize(14);
+                            c.Item().Text($"{simbolo} {reporte.TotalIngresos:N2}").FontColor(Colors.Green.Darken2).FontSize(14);
                         });
                         row.RelativeItem().Column(c =>
                         {
                             c.Item().Text("Total Egresos").Bold();
-                            c.Item().Text($"Q {reporte.TotalEgresos:N2}").FontColor(Colors.Red.Darken2).FontSize(14);
+                            c.Item().Text($"{simbolo} {reporte.TotalEgresos:N2}").FontColor(Colors.Red.Darken2).FontSize(14);
                         });
                         row.RelativeItem().Column(c =>
                         {
                             c.Item().Text("Balance").Bold();
                             var color = reporte.Balance >= 0 ? Colors.Green.Darken2 : Colors.Red.Darken2;
-                            c.Item().Text($"Q {reporte.Balance:N2}").FontColor(color).FontSize(14);
+                            c.Item().Text($"{simbolo} {reporte.Balance:N2}").FontColor(color).FontSize(14);
                         });
                     });
 
                     col.Item().PaddingTop(15).Text("INGRESOS").Bold().FontSize(12).FontColor(Colors.Green.Darken2);
-                    col.Item().Table(t => BuildTable(t, reporte.Ingresos));
+                    col.Item().Table(t => BuildTable(t, reporte.Ingresos, simbolo));
 
                     col.Item().PaddingTop(15).Text("EGRESOS").Bold().FontSize(12).FontColor(Colors.Red.Darken2);
-                    col.Item().Table(t => BuildTable(t, reporte.Egresos));
+                    col.Item().Table(t => BuildTable(t, reporte.Egresos, simbolo));
 
                     if (reporte.Comparaciones?.Any() == true)
                     {
@@ -235,10 +265,10 @@ public class PdfService
                             foreach (var comp in reporte.Comparaciones)
                             {
                                 t.Cell().Padding(4).Text(comp.Periodo);
-                                t.Cell().Padding(4).Text($"Q {comp.TotalIngresos:N2}").FontColor(Colors.Green.Darken2);
-                                t.Cell().Padding(4).Text($"Q {comp.TotalEgresos:N2}").FontColor(Colors.Red.Darken2);
+                                t.Cell().Padding(4).Text($"{simbolo} {comp.TotalIngresos:N2}").FontColor(Colors.Green.Darken2);
+                                t.Cell().Padding(4).Text($"{simbolo} {comp.TotalEgresos:N2}").FontColor(Colors.Red.Darken2);
                                 var balColor = comp.Balance >= 0 ? Colors.Green.Darken2 : Colors.Red.Darken2;
-                                t.Cell().Padding(4).Text($"Q {comp.Balance:N2}").FontColor(balColor);
+                                t.Cell().Padding(4).Text($"{simbolo} {comp.Balance:N2}").FontColor(balColor);
                             }
                         });
                     }
@@ -255,7 +285,7 @@ public class PdfService
         }).GeneratePdf();
     }
 
-    private static void BuildTable(TableDescriptor t, List<ReporteDetalle> items)
+    private static void BuildTable(TableDescriptor t, List<ReporteDetalle> items, string simbolo = "$")
     {
         t.ColumnsDefinition(c =>
         {
@@ -275,7 +305,7 @@ public class PdfService
             t.Cell().Padding(4).Text(item.Fecha.ToString("dd/MM/yyyy"));
             t.Cell().Padding(4).Text(item.Codigo);
             t.Cell().Padding(4).Text(item.Descripcion);
-            t.Cell().Padding(4).Text($"Q {item.Cantidad:N2}");
+            t.Cell().Padding(4).Text($"{simbolo} {item.Cantidad:N2}");
             t.Cell().Padding(4).Text(item.Notas ?? "");
         }
         if (!items.Any())
