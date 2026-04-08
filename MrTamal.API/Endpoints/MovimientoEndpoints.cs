@@ -9,7 +9,13 @@ namespace MrTamal.API.Endpoints;
 
 public static class MovimientoEndpoints
 {
-    // Obtiene la sucursal activa: primero del header X-Sucursal-Id, luego del usuario en BD
+    public static void MapMovimientoEndpoints(this WebApplication app)
+    {
+        MapIngresosEndpoints(app);
+        MapEgresosEndpoints(app);
+    }
+
+    // Sucursal activa: header X-Sucursal-Id tiene prioridad sobre la del usuario en BD
     private static async Task<int?> GetSucursalActivaAsync(HttpContext ctx, AppDbContext db, int uid)
     {
         if (ctx.Request.Headers.TryGetValue("X-Sucursal-Id", out var val) &&
@@ -17,14 +23,6 @@ public static class MovimientoEndpoints
             return hId;
         var usuario = await db.Usuarios.FindAsync(uid);
         return usuario?.SucursalId;
-    }
-
-public static class MovimientoEndpoints
-{
-    public static void MapMovimientoEndpoints(this WebApplication app)
-    {
-        MapIngresosEndpoints(app);
-        MapEgresosEndpoints(app);
     }
 
     private static void MapIngresosEndpoints(WebApplication app)
@@ -89,7 +87,6 @@ public static class MovimientoEndpoints
             var ingreso = await db.Ingresos.Include(i => i.Catalogo).Include(i => i.Sucursal)
                 .FirstOrDefaultAsync(i => i.Id == id && i.UsuarioId == uid);
             if (ingreso is null) return Results.NotFound();
-            // La sucursal NO cambia al editar - queda la original del momento de creación
             ingreso.Fecha = Utc(req.Fecha);
             ingreso.CatalogoId = req.CatalogoId;
             ingreso.Cantidad = req.Cantidad;
